@@ -2,8 +2,8 @@ import asyncio
 from pyrogram import Client
 from config import API_ID, API_HASH, BOT_TOKEN, ADMIN_ID
 from database import db
-from handlers.scraper import setup_scraper_handler
-from handlers.admin_menu import setup_admin_handlers
+from handlers.scraper import setup_scraper_handler, set_sender_client
+from handlers.admin_menu import setup_admin_handlers, send_admin_menu, set_user_client
 import os
 
 
@@ -27,7 +27,7 @@ async def main():
     if not os.path.exists(session_file):
         print("\n⚠️  Сессия не найдена. Нужна авторизация как пользователь.")
         print("Для чтения каналов без админских прав нужна user session.")
-        print("При первом запуске вам нужно будет ввести номер телефона и код подтверждения.\n")
+        print("При первом запуске вам нужно будет ввести номер телефона в международном формате (например, +380... или +7...) и код подтверждения.\n")
     
     # Create user client (for reading channels)
     user_client = Client(
@@ -64,15 +64,13 @@ async def main():
         
         # Setup admin handlers on bot client
         print("Setting up admin handlers...")
+        set_user_client(user_client)
         setup_admin_handlers(bot_client)
+        set_sender_client(bot_client)
         
         if ADMIN_ID:
             try:
-                await bot_client.send_message(
-                    ADMIN_ID,
-                    "🤖 **Content Cloner Bot Started!**\n\n"
-                    "Use /admin to open the admin panel."
-                )
+                await send_admin_menu(bot_client, ADMIN_ID, user_id=ADMIN_ID)
             except:
                 print("Could not send startup message to admin.")
     else:

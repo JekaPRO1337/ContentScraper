@@ -2,29 +2,222 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from database import db
 from config import ADMIN_ID
+from handlers.scraper import clear_memory_cache
 import re
 
 
+_user_client: Client | None = None
+
+
+def set_user_client(client: Client | None):
+    global _user_client
+    _user_client = client
+
+
+def _normalize_chat_ref(chat_ref: str) -> str:
+    return (
+        str(chat_ref)
+        .strip()
+        .replace("−", "-")
+        .replace("–", "-")
+        .replace("—", "-")
+    )
+
+
+async def _resolve_chat_for_admin(client: Client, chat_ref: str):
+    ref = _normalize_chat_ref(chat_ref)
+    if ref.startswith("@"):
+        return await client.get_chat(ref)
+    if ref.startswith("-") or ref.isdigit():
+        return await client.get_chat(int(ref))
+    return await client.get_chat(f"@{ref}")
+
+
+def _t(lang: str, key: str) -> str:
+    lang = (lang or "ru").lower()
+    texts = {
+        "ru": {
+            "admin_panel_title": "**🤖 Админ-панель**\n\nВыберите действие:",
+            "btn_stats": "📊 Статистика",
+            "btn_add_pair": "➕ Добавить пару",
+            "btn_remove_pair": "➖ Удалить пару",
+            "btn_button_rules": "🧷 Кнопки",
+            "btn_list_pairs": "📋 Список пар",
+            "btn_language": "🌐 Язык",
+            "btn_close": "❌ Закрыть",
+            "btn_back": "🔙 Назад",
+            "language_title": "**🌐 Язык**\n\nВыберите язык интерфейса:",
+            "btn_lang_ru": "Русский ✅",
+            "btn_lang_en": "English",
+            "language_updated_ru": "Язык переключен на русский.",
+            "language_updated_en": "Language switched to English.",
+            "no_pairs": "Нет настроенных пар каналов.",
+            "no_pairs_remove": "Нет пар для удаления.",
+            "stats_title": "**📊 Статистика**\n\n",
+            "list_pairs_title": "**📋 Пары каналов**\n\n",
+            "add_pair_title": "**➕ Добавить пару**\n\n",
+            "add_pair_prompt": "Отправьте пару в формате:\n`/addpair donor_channel target_channel`\n\nПример:\n`/addpair @donorchannel @targetchannel`\n\nИли используйте ID каналов:\n`/addpair -1001234567890 -1009876543210`",
+            "remove_pair_title": "**➖ Удалить пару**\n\n",
+            "remove_pair_prompt": "Отправьте ID пары для удаления:\n`/removepair <pair_id>`\n\nДоступные пары:\n",
+            "button_rules_title": "**🧷 Кнопки**\n\n",
+            "button_rules_none": "Кнопки не настроены.\n\n",
+            "button_rules_commands": "**Команды:**\n`/addbtn1 текст|url`\n`/addbtn2 t1|u1 || t2|u2`\n`/removebtn` — удалить кнопки",
+            "label_mode": "Режим",
+            "label_btn1": "Кнопка 1",
+            "label_btn2": "Кнопка 2",
+            "addbtn1_usage": "**Использование:** `/addbtn1 текст|url`",
+            "addbtn2_usage": "**Использование:** `/addbtn2 t1|u1 || t2|u2`",
+            "removebtn_usage": "**Использование:** `/removebtn`",
+            "button_rule_added": "✅ Кнопки обновлены!",
+            "button_rule_removed": "✅ Кнопки удалены!",
+            "button_rule_invalid": "❌ Некорректный формат. Проверь команду.",
+            "label_pair_id": "ID пары",
+            "label_donor": "Донор",
+            "label_target": "Цель",
+            "label_posts_cloned": "Постов",
+            "label_last_cloned": "Последний",
+            "label_total_posts": "Всего постов",
+            "label_rule_id": "ID правила",
+            "label_pattern": "Шаблон",
+            "label_replacement": "Замена",
+            "cleardb_done": "✅ База очищена (пары/статистика/обработанные сообщения).",
+            "cleardb_done_all": "✅ База очищена (включая правила ссылок).",
+            "addpair_usage": "**Использование:** `/addpair donor_channel target_channel`\n\n**Примеры:**\n`/addpair @testchannel @targetchannel`\n`/addpair -1001234567890 -1009876543210`\n\n💡 **Для каналов без username используйте ID канала**\nПолучить ID можно через @userinfobot или @getidsbot",
+            "addpair_resolve_warn": "⚠️ Не удалось проверить каналы: {error}\nПродолжаю с указанными значениями...",
+            "addpair_success": "✅ **Пара каналов успешно добавлена!**\n\n**ID пары:** {pair_id}\n**Донор:** `{donor}`\n**Целевой:** `{target}`",
+            "remove_usage": "**Использование:** `/removepair <pair_id>`",
+            "remove_success": "✅ Пара каналов {pair_id} успешно удалена!",
+            "remove_invalid": "❌ Некорректный ID пары. Укажите число.",
+            "addrule_usage": "**Использование:** `/addrule <pattern> <replacement>`\n\nПример: `/addrule https://example.com https://myaffiliate.com`\nДля regex: `/addrule regex:example\\.com myaffiliate.com`",
+            "addrule_required": "❌ Шаблон и замена обязательны.",
+            "addrule_success": "✅ Правило добавлено!\n\n**ID правила:** {rule_id}\n**Шаблон:** `{pattern}`\n**Замена:** `{replacement}`",
+            "removerule_usage": "**Использование:** `/removerule <rule_id>`",
+            "removerule_success": "✅ Правило {rule_id} удалено!",
+            "removerule_invalid": "❌ Некорректный ID правила. Укажите число.",
+            "generic_error": "❌ Ошибка: {error}",
+        },
+        "en": {
+            "admin_panel_title": "**🤖 Admin Panel**\n\nSelect an option:",
+            "btn_stats": "📊 Statistics",
+            "btn_add_pair": "➕ Add Channel Pair",
+            "btn_remove_pair": "➖ Remove Channel Pair",
+            "btn_button_rules": "🧷 Buttons",
+            "btn_list_pairs": "📋 Channel Pairs",
+            "btn_language": "🌐 Language",
+            "btn_close": "❌ Close",
+            "btn_back": "🔙 Back",
+            "language_title": "**🌐 Language**\n\nChoose interface language:",
+            "btn_lang_ru": "Русский",
+            "btn_lang_en": "English ✅",
+            "language_updated_ru": "Язык переключен на русский.",
+            "language_updated_en": "Language switched to English.",
+            "no_pairs": "No channel pairs configured.",
+            "no_pairs_remove": "No channel pairs to remove.",
+            "stats_title": "**📊 Statistics**\n\n",
+            "list_pairs_title": "**📋 Channel Pairs**\n\n",
+            "add_pair_title": "**➕ Add Channel Pair**\n\n",
+            "add_pair_prompt": "Send the pair in format:\n`/addpair donor_channel target_channel`\n\nExample:\n`/addpair @donorchannel @targetchannel`\n\nOr use channel IDs:\n`/addpair -1001234567890 -1009876543210`",
+            "remove_pair_title": "**➖ Remove Channel Pair**\n\n",
+            "remove_pair_prompt": "Send pair ID to remove:\n`/removepair <pair_id>`\n\nAvailable pairs:\n",
+            "button_rules_title": "**🧷 Buttons**\n\n",
+            "button_rules_none": "Buttons are not configured.\n\n",
+            "button_rules_commands": "**Commands:**\n`/addbtn1 text|url`\n`/addbtn2 t1|u1 || t2|u2`\n`/removebtn` — remove buttons",
+            "label_mode": "Mode",
+            "label_btn1": "Button 1",
+            "label_btn2": "Button 2",
+            "addbtn1_usage": "**Usage:** `/addbtn1 text|url`",
+            "addbtn2_usage": "**Usage:** `/addbtn2 t1|u1 || t2|u2`",
+            "removebtn_usage": "**Usage:** `/removebtn`",
+            "button_rule_added": "✅ Buttons updated!",
+            "button_rule_removed": "✅ Buttons removed!",
+            "button_rule_invalid": "❌ Invalid format. Please check the command.",
+            "label_pair_id": "Pair ID",
+            "label_donor": "Donor",
+            "label_target": "Target",
+            "label_posts_cloned": "Posts",
+            "label_last_cloned": "Last",
+            "label_total_posts": "Total posts",
+            "label_rule_id": "Rule ID",
+            "label_pattern": "Pattern",
+            "label_replacement": "Replacement",
+            "cleardb_done": "✅ Database cleared (pairs/statistics/processed messages).",
+            "cleardb_done_all": "✅ Database cleared (including link rules).",
+            "addpair_usage": "**Usage:** `/addpair donor_channel target_channel`\n\n**Examples:**\n`/addpair @testchannel @targetchannel`\n`/addpair -1001234567890 -1009876543210`\n\n💡 **For channels without username use channel ID**\nYou can get IDs via @userinfobot or @getidsbot",
+            "addpair_resolve_warn": "⚠️ Could not validate channels: {error}\nContinuing with provided values...",
+            "addpair_success": "✅ **Channel pair added!**\n\n**Pair ID:** {pair_id}\n**Donor:** `{donor}`\n**Target:** `{target}`",
+            "remove_usage": "**Usage:** `/removepair <pair_id>`",
+            "remove_success": "✅ Channel pair {pair_id} removed successfully!",
+            "remove_invalid": "❌ Invalid pair ID. Please provide a number.",
+            "addrule_usage": "**Usage:** `/addrule <pattern> <replacement>`\n\nExample: `/addrule https://example.com https://myaffiliate.com`\nFor regex: `/addrule regex:example\\.com myaffiliate.com`",
+            "addrule_required": "❌ Pattern and replacement are required.",
+            "addrule_success": "✅ Link rule added!\n\n**Rule ID:** {rule_id}\n**Pattern:** `{pattern}`\n**Replacement:** `{replacement}`",
+            "removerule_usage": "**Usage:** `/removerule <rule_id>`",
+            "removerule_success": "✅ Link rule {rule_id} removed successfully!",
+            "removerule_invalid": "❌ Invalid rule ID. Please provide a number.",
+            "generic_error": "❌ Error: {error}",
+        },
+    }
+
+    return texts.get(lang, texts["ru"]).get(key, key)
+
+
+async def _get_lang_from_message(message: Message) -> str:
+    try:
+        if message and message.from_user:
+            return await db.get_user_lang(message.from_user.id)
+    except Exception:
+        pass
+    return "ru"
+
+
+async def _get_lang_from_callback(callback_query) -> str:
+    try:
+        if callback_query and callback_query.from_user:
+            return await db.get_user_lang(callback_query.from_user.id)
+    except Exception:
+        pass
+    return "ru"
+
+
+def _admin_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(_t(lang, "btn_stats"), callback_data="admin_stats"),
+            InlineKeyboardButton(_t(lang, "btn_add_pair"), callback_data="admin_add_pair"),
+        ],
+        [
+            InlineKeyboardButton(_t(lang, "btn_remove_pair"), callback_data="admin_remove_pair"),
+            InlineKeyboardButton(_t(lang, "btn_list_pairs"), callback_data="admin_list_pairs"),
+        ],
+        [
+            InlineKeyboardButton(_t(lang, "btn_button_rules"), callback_data="admin_button_rules"),
+        ],
+        [
+            InlineKeyboardButton(_t(lang, "btn_language"), callback_data="admin_language"),
+        ],
+        [
+            InlineKeyboardButton(_t(lang, "btn_close"), callback_data="admin_close"),
+        ],
+    ])
+
+
+async def send_admin_menu(client: Client, chat_id: int, user_id: int | None = None):
+    """Send main admin menu to a chat (used on startup)."""
+    uid = int(user_id) if user_id is not None else int(chat_id)
+    lang = await db.get_user_lang(uid)
+    await client.send_message(
+        chat_id,
+        _t(lang, "admin_panel_title"),
+        reply_markup=_admin_menu_keyboard(lang)
+    )
+
 async def show_admin_menu(client: Client, message: Message):
     """Show main admin menu"""
-    keyboard = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("📊 Statistics", callback_data="admin_stats"),
-            InlineKeyboardButton("➕ Add Channel Pair", callback_data="admin_add_pair")
-        ],
-        [
-            InlineKeyboardButton("➖ Remove Channel Pair", callback_data="admin_remove_pair"),
-            InlineKeyboardButton("🔗 Link Rules", callback_data="admin_link_rules")
-        ],
-        [
-            InlineKeyboardButton("📋 List Pairs", callback_data="admin_list_pairs"),
-            InlineKeyboardButton("❌ Close", callback_data="admin_close")
-        ]
-    ])
+    lang = await _get_lang_from_message(message)
+    keyboard = _admin_menu_keyboard(lang)
     
     await message.reply_text(
-        "**🤖 Admin Panel**\n\n"
-        "Select an option:",
+        _t(lang, "admin_panel_title"),
         reply_markup=keyboard
     )
 
@@ -34,28 +227,55 @@ async def handle_admin_stats(client: Client, callback_query):
     stats = await db.get_statistics()
     
     if not stats:
-        await callback_query.answer("No channel pairs configured.", show_alert=True)
+        lang = await _get_lang_from_callback(callback_query)
+        await callback_query.answer(_t(lang, "no_pairs"), show_alert=True)
         return
     
-    text = "**📊 Statistics**\n\n"
+    lang = await _get_lang_from_callback(callback_query)
+    text = _t(lang, "stats_title")
     total_posts = 0
     
     for stat in stats:
-        text += f"**Pair ID:** {stat['id']}\n"
-        text += f"**Donor:** `{stat['donor_channel']}`\n"
-        text += f"**Target:** `{stat['target_channel']}`\n"
-        text += f"**Posts Cloned:** {stat['posts_cloned']}\n"
+        text += f"**{_t(lang, 'label_pair_id')}:** {stat['id']}\n"
+        text += f"**{_t(lang, 'label_donor')}:** `{stat['donor_channel']}`\n"
+        text += f"**{_t(lang, 'label_target')}:** `{stat['target_channel']}`\n"
+        text += f"**{_t(lang, 'label_posts_cloned')}:** {stat['posts_cloned']}\n"
         if stat['last_cloned_at']:
-            text += f"**Last Cloned:** {stat['last_cloned_at']}\n"
+            text += f"**{_t(lang, 'label_last_cloned')}:** {stat['last_cloned_at']}\n"
         text += "\n"
         total_posts += stat['posts_cloned']
     
-    text += f"**Total Posts Cloned:** {total_posts}"
+    text += f"**{_t(lang, 'label_total_posts')}:** {total_posts}"
     
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="admin_menu")]
+        [InlineKeyboardButton(_t(await _get_lang_from_callback(callback_query), "btn_back"), callback_data="admin_menu")]
     ])
     
+    await callback_query.edit_message_text(text, reply_markup=keyboard)
+
+
+async def handle_button_rules(client: Client, callback_query):
+    rules = await db.get_all_button_rules()
+
+    lang = await _get_lang_from_callback(callback_query)
+    text = _t(lang, "button_rules_title")
+
+    if rules:
+        rule = rules[0]
+        mode = (rule.get('mode') or '').lower()
+        text += f"{_t(lang, 'label_mode')}: `{mode}`\n"
+        text += f"{_t(lang, 'label_btn1')}: `{(rule.get('text1') or '')}` | `{(rule.get('url1') or '')}`\n"
+        if mode == 'two':
+            text += f"{_t(lang, 'label_btn2')}: `{(rule.get('text2') or '')}` | `{(rule.get('url2') or '')}`\n"
+        text += "\n"
+    else:
+        text += _t(lang, "button_rules_none")
+
+    text += "\n" + _t(lang, "button_rules_commands")
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(_t(lang, "btn_back"), callback_data="admin_menu")]
+    ])
     await callback_query.edit_message_text(text, reply_markup=keyboard)
 
 
@@ -64,18 +284,20 @@ async def handle_list_pairs(client: Client, callback_query):
     pairs = await db.get_statistics()
     
     if not pairs:
-        await callback_query.answer("No channel pairs configured.", show_alert=True)
+        lang = await _get_lang_from_callback(callback_query)
+        await callback_query.answer(_t(lang, "no_pairs"), show_alert=True)
         return
     
-    text = "**📋 Channel Pairs**\n\n"
+    lang = await _get_lang_from_callback(callback_query)
+    text = _t(lang, "list_pairs_title")
     for pair in pairs:
-        text += f"**ID:** {pair['id']}\n"
-        text += f"**Donor:** `{pair['donor_channel']}`\n"
-        text += f"**Target:** `{pair['target_channel']}`\n"
-        text += f"**Posts:** {pair['posts_cloned']}\n\n"
+        text += f"**{_t(lang, 'label_pair_id')}:** {pair['id']}\n"
+        text += f"**{_t(lang, 'label_donor')}:** `{pair['donor_channel']}`\n"
+        text += f"**{_t(lang, 'label_target')}:** `{pair['target_channel']}`\n"
+        text += f"**{_t(lang, 'label_posts_cloned')}:** {pair['posts_cloned']}\n\n"
     
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="admin_menu")]
+        [InlineKeyboardButton(_t(await _get_lang_from_callback(callback_query), "btn_back"), callback_data="admin_menu")]
     ])
     
     await callback_query.edit_message_text(text, reply_markup=keyboard)
@@ -84,19 +306,12 @@ async def handle_list_pairs(client: Client, callback_query):
 async def handle_add_pair(client: Client, callback_query):
     """Prompt for adding channel pair"""
     await callback_query.answer()
-    
-    text = (
-        "**➕ Add Channel Pair**\n\n"
-        "Please send the channel pair in the following format:\n"
-        "`/addpair donor_channel target_channel`\n\n"
-        "Example:\n"
-        "`/addpair @donorchannel @targetchannel`\n\n"
-        "Or use channel IDs:\n"
-        "`/addpair -1001234567890 -1009876543210`"
-    )
+
+    lang = await _get_lang_from_callback(callback_query)
+    text = _t(lang, "add_pair_title") + _t(lang, "add_pair_prompt")
     
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="admin_menu")]
+        [InlineKeyboardButton(_t(await _get_lang_from_callback(callback_query), "btn_back"), callback_data="admin_menu")]
     ])
     
     await callback_query.edit_message_text(text, reply_markup=keyboard)
@@ -107,18 +322,18 @@ async def handle_remove_pair(client: Client, callback_query):
     pairs = await db.get_statistics()
     
     if not pairs:
-        await callback_query.answer("No channel pairs to remove.", show_alert=True)
+        lang = await _get_lang_from_callback(callback_query)
+        await callback_query.answer(_t(lang, "no_pairs_remove"), show_alert=True)
         return
     
-    text = "**➖ Remove Channel Pair**\n\n"
-    text += "Send the pair ID to remove:\n"
-    text += "`/removepair <pair_id>`\n\n"
-    text += "Available pairs:\n"
+    lang = await _get_lang_from_callback(callback_query)
+    text = _t(lang, "remove_pair_title")
+    text += _t(lang, "remove_pair_prompt")
     for pair in pairs:
         text += f"**{pair['id']}:** `{pair['donor_channel']}` → `{pair['target_channel']}`\n"
     
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="admin_menu")]
+        [InlineKeyboardButton(_t(await _get_lang_from_callback(callback_query), "btn_back"), callback_data="admin_menu")]
     ])
     
     await callback_query.edit_message_text(text, reply_markup=keyboard)
@@ -127,29 +342,61 @@ async def handle_remove_pair(client: Client, callback_query):
 async def handle_link_rules(client: Client, callback_query):
     """Show link rules menu"""
     rules = await db.get_all_link_rules()
-    
-    text = "**🔗 Link Replacement Rules**\n\n"
+
+    lang = await _get_lang_from_callback(callback_query)
+    text = _t(lang, "link_rules_title")
     
     if rules:
         for rule in rules:
-            text += f"**ID {rule['id']}:**\n"
-            text += f"Pattern: `{rule['pattern'][:50]}...`\n"
-            text += f"Replacement: `{rule['replacement'][:50]}...`\n\n"
+            text += f"**{_t(lang, 'label_rule_id')} {rule['id']}:**\n"
+            text += f"{_t(lang, 'label_pattern')}: `{rule['pattern'][:50]}...`\n"
+            text += f"{_t(lang, 'label_replacement')}: `{rule['replacement'][:50]}...`\n\n"
     else:
-        text += "No rules configured.\n\n"
-    
-    text += "**Commands:**\n"
-    text += "`/addrule <pattern> <replacement>`\n"
-    text += "`/removerule <rule_id>`\n\n"
-    text += "For regex patterns, prefix with `regex:`"
+        text += _t(lang, "link_rules_none")
+
+    text += _t(lang, "link_rules_commands")
     
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("🔙 Back", callback_data="admin_menu")
+            InlineKeyboardButton(_t(await _get_lang_from_callback(callback_query), "btn_back"), callback_data="admin_menu")
         ]
     ])
     
     await callback_query.edit_message_text(text, reply_markup=keyboard)
+
+
+async def handle_language_menu(client: Client, callback_query):
+    """Show language selection menu"""
+    lang = await _get_lang_from_callback(callback_query)
+    ru_btn = _t(lang, "btn_lang_ru")
+    en_btn = _t(lang, "btn_lang_en")
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(ru_btn, callback_data="admin_set_lang:ru"),
+            InlineKeyboardButton(en_btn, callback_data="admin_set_lang:en"),
+        ],
+        [InlineKeyboardButton(_t(lang, "btn_back"), callback_data="admin_menu")],
+    ])
+
+    await callback_query.edit_message_text(_t(lang, "language_title"), reply_markup=keyboard)
+
+
+async def handle_set_language(client: Client, callback_query, lang_code: str):
+    """Persist language selection"""
+    user_id = callback_query.from_user.id
+    await db.set_user_lang(user_id, lang_code)
+
+    new_lang = await db.get_user_lang(user_id)
+    if new_lang == "en":
+        await callback_query.answer(_t("en", "language_updated_en"), show_alert=False)
+    else:
+        await callback_query.answer(_t("ru", "language_updated_ru"), show_alert=False)
+
+    await callback_query.edit_message_text(
+        _t(new_lang, "admin_panel_title"),
+        reply_markup=_admin_menu_keyboard(new_lang)
+    )
 
 
 async def handle_admin_menu_callback(client: Client, callback_query):
@@ -157,7 +404,11 @@ async def handle_admin_menu_callback(client: Client, callback_query):
     data = callback_query.data
     
     if data == "admin_menu":
-        await show_admin_menu(client, callback_query.message)
+        lang = await _get_lang_from_callback(callback_query)
+        await callback_query.edit_message_text(
+            _t(lang, "admin_panel_title"),
+            reply_markup=_admin_menu_keyboard(lang)
+        )
         await callback_query.answer()
     elif data == "admin_stats":
         await handle_admin_stats(client, callback_query)
@@ -167,8 +418,16 @@ async def handle_admin_menu_callback(client: Client, callback_query):
         await handle_add_pair(client, callback_query)
     elif data == "admin_remove_pair":
         await handle_remove_pair(client, callback_query)
-    elif data == "admin_link_rules":
-        await handle_link_rules(client, callback_query)
+    elif data == "admin_button_rules":
+        await callback_query.answer()
+        await handle_button_rules(client, callback_query)
+    elif data == "admin_language":
+        await callback_query.answer()
+        await handle_language_menu(client, callback_query)
+    elif data.startswith("admin_set_lang:"):
+        await callback_query.answer()
+        lang_code = data.split(":", 1)[1].strip().lower()
+        await handle_set_language(client, callback_query, lang_code)
     elif data == "admin_close":
         await callback_query.message.delete()
         await callback_query.answer()
@@ -180,30 +439,45 @@ async def admin_command(client: Client, message: Message):
     await show_admin_menu(client, message)
 
 
+async def menu_command(client: Client, message: Message):
+    """Menu command handler"""
+    await show_admin_menu(client, message)
+
+
+async def clear_db_command(client: Client, message: Message):
+    include_rules = False
+    try:
+        parts = message.text.split(maxsplit=1)
+        if len(parts) > 1 and parts[1].strip().lower() == "all":
+            include_rules = True
+    except Exception:
+        include_rules = False
+
+    await db.clear_data(include_rules=include_rules)
+    lang = await _get_lang_from_message(message)
+    await message.reply_text(_t(lang, "cleardb_done_all" if include_rules else "cleardb_done"))
+
+
 async def add_pair_command(client: Client, message: Message):
     """Add channel pair command"""
+    lang = await _get_lang_from_message(message)
     try:
         parts = message.text.split(maxsplit=2)
         if len(parts) < 3:
-            await message.reply_text(
-                "**Использование:** `/addpair donor_channel target_channel`\n\n"
-                "**Примеры:**\n"
-                "`/addpair @testchannel @targetchannel`\n"
-                "`/addpair -1001234567890 -1009876543210`\n\n"
-                "💡 **Для каналов без username используйте ID канала**\n"
-                "Получить ID можно через @userinfobot или @getidsbot"
-            )
+            await message.reply_text(_t(lang, "addpair_usage"))
             return
         
         donor_channel = parts[1].strip()
         target_channel = parts[2].strip()
+
+        resolver_client = _user_client or client
         
         # Try to resolve channel IDs if usernames provided
         try:
             # If it's a username, try to get the chat
             if donor_channel.startswith('@'):
                 try:
-                    donor_chat = await client.get_chat(donor_channel)
+                    donor_chat = await _resolve_chat_for_admin(resolver_client, donor_channel)
                     # Store both username and ID for flexibility
                     donor_channel = f"@{donor_chat.username}" if donor_chat.username else str(donor_chat.id)
                 except:
@@ -211,67 +485,126 @@ async def add_pair_command(client: Client, message: Message):
             elif not donor_channel.startswith('-'):
                 # Assume it's a username without @
                 try:
-                    donor_chat = await client.get_chat(f"@{donor_channel}")
+                    donor_chat = await _resolve_chat_for_admin(resolver_client, donor_channel)
                     donor_channel = f"@{donor_chat.username}" if donor_chat.username else str(donor_chat.id)
                 except:
                     donor_channel = f"@{donor_channel}"
+            else:
+                donor_channel = _normalize_chat_ref(donor_channel)
             
             if target_channel.startswith('@'):
                 try:
-                    target_chat = await client.get_chat(target_channel)
+                    target_chat = await _resolve_chat_for_admin(resolver_client, target_channel)
                     target_channel = f"@{target_chat.username}" if target_chat.username else str(target_chat.id)
                 except:
                     pass
             elif not target_channel.startswith('-'):
                 try:
-                    target_chat = await client.get_chat(f"@{target_channel}")
+                    target_chat = await _resolve_chat_for_admin(resolver_client, target_channel)
                     target_channel = f"@{target_chat.username}" if target_chat.username else str(target_chat.id)
                 except:
                     target_channel = f"@{target_channel}"
+            else:
+                target_channel = _normalize_chat_ref(target_channel)
         except Exception as e:
-            await message.reply_text(f"⚠️ Не удалось проверить каналы: {str(e)}\nПродолжаю с указанными значениями...")
+            await message.reply_text(_t(lang, "addpair_resolve_warn").format(error=str(e)))
         
         pair_id = await db.add_channel_pair(donor_channel, target_channel)
         await message.reply_text(
-            f"✅ **Пара каналов успешно добавлена!**\n\n"
-            f"**ID пары:** {pair_id}\n"
-            f"**Донор:** `{donor_channel}`\n"
-            f"**Целевой:** `{target_channel}`\n\n"
-            f"⚠️ **Важно:** Убедитесь, что бот добавлен как администратор в оба канала!"
+            _t(lang, "addpair_success").format(
+                pair_id=pair_id,
+                donor=donor_channel,
+                target=target_channel,
+            )
         )
     except Exception as e:
-        await message.reply_text(f"❌ Ошибка: {str(e)}")
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
+async def add_button_rule_one_command(client: Client, message: Message):
+    lang = await _get_lang_from_message(message)
+    try:
+        payload = message.text.split(maxsplit=1)
+        if len(payload) < 2:
+            await message.reply_text(_t(lang, "addbtn1_usage"))
+            return
+        raw = payload[1].strip()
+        parts = [p.strip() for p in raw.split('|')]
+        if len(parts) != 2:
+            await message.reply_text(_t(lang, "button_rule_invalid"))
+            return
+
+        await db.clear_button_rules()
+        await db.add_button_rule('one', '', parts[0], parts[1])
+        await message.reply_text(_t(lang, "button_rule_added"))
+    except Exception as e:
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
+async def add_button_rule_two_command(client: Client, message: Message):
+    lang = await _get_lang_from_message(message)
+    try:
+        payload = message.text.split(maxsplit=1)
+        if len(payload) < 2:
+            await message.reply_text(_t(lang, "addbtn2_usage"))
+            return
+        raw = payload[1].strip()
+        groups = [g.strip() for g in raw.split('||')]
+        if len(groups) != 2:
+            await message.reply_text(_t(lang, "button_rule_invalid"))
+            return
+
+        p1 = [p.strip() for p in groups[0].split('|')]
+        p2 = [p.strip() for p in groups[1].split('|')]
+        if len(p1) != 2 or len(p2) != 2:
+            await message.reply_text(_t(lang, "button_rule_invalid"))
+            return
+
+        await db.clear_button_rules()
+        await db.add_button_rule('two', '', p1[0], p1[1], '', p2[0], p2[1])
+        await message.reply_text(_t(lang, "button_rule_added"))
+    except Exception as e:
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
+async def remove_button_rule_command(client: Client, message: Message):
+    lang = await _get_lang_from_message(message)
+    try:
+        await db.clear_button_rules()
+        await message.reply_text(_t(lang, "button_rule_removed"))
+    except Exception as e:
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
 
 
 async def remove_pair_command(client: Client, message: Message):
     """Remove channel pair command"""
+    lang = await _get_lang_from_message(message)
     try:
         parts = message.text.split()
         if len(parts) < 2:
-            await message.reply_text("**Usage:** `/removepair <pair_id>`")
+            await message.reply_text(_t(lang, "remove_usage"))
             return
         
         pair_id = int(parts[1])
-        await db.remove_channel_pair(pair_id)
-        await message.reply_text(f"✅ Channel pair {pair_id} removed successfully!")
+        removed_donor = await db.remove_channel_pair(pair_id)
+        if removed_donor:
+            clear_memory_cache(removed_donor)
+        await message.reply_text(_t(lang, "remove_success").format(pair_id=pair_id))
     except ValueError:
-        await message.reply_text("❌ Invalid pair ID. Please provide a number.")
+        await message.reply_text(_t(lang, "remove_invalid"))
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
 
 
 async def add_rule_command(client: Client, message: Message):
     """Add link replacement rule"""
+    lang = await _get_lang_from_message(message)
     try:
         # Parse command: /addrule pattern replacement
         # Handle patterns and replacements that may contain spaces
         text = message.text
         if not text or len(text.split()) < 3:
-            await message.reply_text(
-                "**Usage:** `/addrule <pattern> <replacement>`\n\n"
-                "Example: `/addrule https://example.com https://myaffiliate.com`\n"
-                "For regex: `/addrule regex:example\\.com myaffiliate.com`"
-            )
+            await message.reply_text(_t(lang, "addrule_usage"))
             return
         
         parts = text.split(maxsplit=2)
@@ -282,35 +615,59 @@ async def add_rule_command(client: Client, message: Message):
         replacement = parts[2] if len(parts) > 2 else ""
         
         if not pattern or not replacement:
-            await message.reply_text("❌ Pattern and replacement are required.")
+            await message.reply_text(_t(lang, "addrule_required"))
             return
         
         rule_id = await db.add_link_rule(pattern, replacement)
         await message.reply_text(
-            f"✅ Link rule added successfully!\n\n"
-            f"**Rule ID:** {rule_id}\n"
-            f"**Pattern:** `{pattern[:100]}`\n"
-            f"**Replacement:** `{replacement[:100]}`"
+            _t(lang, "addrule_success").format(
+                rule_id=rule_id,
+                pattern=pattern[:100],
+                replacement=replacement[:100],
+            )
         )
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
 
 
 async def remove_rule_command(client: Client, message: Message):
     """Remove link replacement rule"""
+    lang = await _get_lang_from_message(message)
     try:
         parts = message.text.split()
         if len(parts) < 2:
-            await message.reply_text("**Usage:** `/removerule <rule_id>`")
+            await message.reply_text(_t(lang, "removerule_usage"))
             return
         
         rule_id = int(parts[1])
         await db.remove_link_rule(rule_id)
-        await message.reply_text(f"✅ Link rule {rule_id} removed successfully!")
+        await message.reply_text(_t(lang, "removerule_success").format(rule_id=rule_id))
     except ValueError:
-        await message.reply_text("❌ Invalid rule ID. Please provide a number.")
+        await message.reply_text(_t(lang, "removerule_invalid"))
     except Exception as e:
-        await message.reply_text(f"❌ Error: {str(e)}")
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
+async def handle_forwarded_message(client: Client, message: Message):
+    """Handle forwarded messages to resolve chat ID"""
+    if message.forward_from_chat:
+        chat = message.forward_from_chat
+        info = f"**📢 Channel Info**\n\n"
+        info += f"**Title:** {chat.title}\n"
+        info += f"**ID:** `{chat.id}`\n"
+        if chat.username:
+            info += f"**Username:** @{chat.username}\n"
+        
+        await message.reply_text(info)
+    elif message.forward_from:
+        user = message.forward_from
+        info = f"**👤 User Info**\n\n"
+        info += f"**Name:** {user.first_name} {user.last_name or ''}\n"
+        info += f"**ID:** `{user.id}`\n"
+        if user.username:
+            info += f"**Username:** @{user.username}\n"
+        
+        await message.reply_text(info)
 
 
 # Setup callback query handler
@@ -326,13 +683,27 @@ def setup_admin_handlers(client: Client):
     
     # Setup command handlers
     admin_filter = filters.command("admin") & filters.user(ADMIN_ID)
+    menu_filter = (filters.command(["start", "menu"]) & filters.user(ADMIN_ID))
+    cleardb_filter = filters.command("cleardb") & filters.user(ADMIN_ID)
     addpair_filter = filters.command("addpair") & filters.user(ADMIN_ID)
     removepair_filter = filters.command("removepair") & filters.user(ADMIN_ID)
     addrule_filter = filters.command("addrule") & filters.user(ADMIN_ID)
     removerule_filter = filters.command("removerule") & filters.user(ADMIN_ID)
+    addbtn1_filter = filters.command("addbtn1") & filters.user(ADMIN_ID)
+    addbtn2_filter = filters.command("addbtn2") & filters.user(ADMIN_ID)
+    removebtn_filter = filters.command("removebtn") & filters.user(ADMIN_ID)
+    
+    # Setup ID resolver
+    id_resolver_filter = filters.forwarded & filters.user(ADMIN_ID)
+    client.add_handler(MessageHandler(handle_forwarded_message, id_resolver_filter))
     
     client.add_handler(MessageHandler(admin_command, admin_filter))
+    client.add_handler(MessageHandler(menu_command, menu_filter))
+    client.add_handler(MessageHandler(clear_db_command, cleardb_filter))
     client.add_handler(MessageHandler(add_pair_command, addpair_filter))
     client.add_handler(MessageHandler(remove_pair_command, removepair_filter))
     client.add_handler(MessageHandler(add_rule_command, addrule_filter))
     client.add_handler(MessageHandler(remove_rule_command, removerule_filter))
+    client.add_handler(MessageHandler(add_button_rule_one_command, addbtn1_filter))
+    client.add_handler(MessageHandler(add_button_rule_two_command, addbtn2_filter))
+    client.add_handler(MessageHandler(remove_button_rule_command, removebtn_filter))

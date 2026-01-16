@@ -6,8 +6,62 @@ import asyncio
 import os
 
 
+_client_is_bot_cache = {}
+
+_sender_client: Client | None = None
+
+
+def set_sender_client(client: Client | None):
+    global _sender_client
+    _sender_client = client
+
+
+async def _is_bot_client(client: Client) -> bool:
+    key = id(client)
+    if key in _client_is_bot_cache:
+        return _client_is_bot_cache[key]
+    try:
+        me = await client.get_me()
+        val = bool(getattr(me, "is_bot", False))
+        _client_is_bot_cache[key] = val
+        return val
+    except Exception:
+        return False
+
+
+async def _resolve_chat(client: Client, donor_channel: str):
+    try:
+        if donor_channel.startswith('@'):
+            return await client.get_chat(donor_channel)
+
+        normalized = (
+            str(donor_channel)
+            .strip()
+            .replace("−", "-")
+            .replace("–", "-")
+            .replace("—", "-")
+        )
+        chat_id = int(normalized)
+        try:
+            return await client.get_chat(chat_id)
+        except Exception:
+            if await _is_bot_client(client):
+                raise
+            async for dialog in client.get_dialogs(limit=2000):
+                _ = dialog.chat.id
+            return await client.get_chat(chat_id)
+    except Exception:
+        raise
+
+
 # Track last processed message IDs per channel
 last_message_ids = {}
+
+
+def clear_memory_cache(channel_id: str):
+    """Clear memory cache for a channel"""
+    if channel_id in last_message_ids:
+        del last_message_ids[channel_id]
 
 
 async def monitor_channel(client: Client, donor_channel: str, target_channel: str, pair_id: int):
@@ -15,25 +69,40 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
     try:
         # Get channel chat
         try:
-            if donor_channel.startswith('@'):
-                chat = await client.get_chat(donor_channel)
-            else:
-                chat = await client.get_chat(int(donor_channel))
+            chat = await _resolve_chat(client, donor_channel)
         except Exception as e:
-            print(f"Error getting chat {donor_channel}: {str(e)}")
+            if "BOT_METHOD_INVALID" in str(e):
+                print(
+                    f"Error getting chat {donor_channel}: {str(e)}. "
+                    f"It looks like the scraper is running under a BOT account. "
+                    f"Scraping must run under the USER session (content_cloner_user.session)."
+                )
+                return
+            if "PEER_ID_INVALID" in str(e):
+                print(
+                    f"Error getting chat {donor_channel}: {str(e)}. "
+                    f"Hint: If using ID, ensure the USER account has joined the channel. "
+                    f"For private channels, you must be a member."
+                )
+                return
+            print(
+                f"Error getting chat {donor_channel}: {str(e)}. "
+                f"Hint: make sure the USER account is member/admin of that channel and the ID is correct."
+            )
             return
         
-        channel_id = f"@{chat.username}" if chat.username else str(chat.id)
+        # Use donor_channel from DB as the key for consistency
+        channel_key = donor_channel
         
         # Get last processed message ID
-        last_id = last_message_ids.get(channel_id, 0)
+        last_id = last_message_ids.get(channel_key, 0)
         
         # Get recent messages (limit 10 for efficiency)
         messages_list = []
         try:
             async for message in client.get_chat_history(chat.id, limit=10):
                 # Skip if already processed
-                if await db.is_message_processed(channel_id, message.id):
+                if await db.is_message_processed(channel_key, message.id):
                     continue
                 
                 # Skip if older than last processed
@@ -41,7 +110,7 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
                     continue
                 
                 messages_list.append(message)
-                last_message_ids[channel_id] = max(last_message_ids.get(channel_id, 0), message.id)
+                last_message_ids[channel_key] = max(last_message_ids.get(channel_key, 0), message.id)
         except Exception as e:
             print(f"Error getting chat history for {donor_channel}: {str(e)}")
             return
@@ -56,7 +125,7 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
         for message in messages_list:
             try:
                 # Check if already processed (double check)
-                if await db.is_message_processed(channel_id, message.id):
+                if await db.is_message_processed(channel_key, message.id):
                     continue
                 
                 # Handle media groups
@@ -71,7 +140,7 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
                     # Try to get other messages in the group
                     async for msg in client.get_chat_history(chat.id, limit=20):
                         if msg.media_group_id == group_id and msg.id != message.id:
-                            if not await db.is_message_processed(channel_id, msg.id):
+                            if not await db.is_message_processed(channel_key, msg.id):
                                 group_messages.append(msg)
                     
                     # Sort by message ID
@@ -87,19 +156,24 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
                     
                     # Mark all as processed
                     for msg in group_messages:
-                        await db.mark_message_processed(channel_id, msg.id)
+                        await db.mark_message_processed(channel_key, msg.id)
                 else:
                     # Regular message
                     await download_and_clone_message(
                         client,
                         message,
                         target_channel,
-                        pair_id
+                        pair_id,
+                        sender_client=_sender_client
                     )
-                    await db.mark_message_processed(channel_id, message.id)
+                    await db.mark_message_processed(channel_key, message.id)
                     
             except Exception as e:
-                print(f"Error processing message {message.id} from {donor_channel}: {str(e)}")
+                # Specific error handling for PEER_ID_INVALID during processing
+                if "PEER_ID_INVALID" in str(e):
+                     print(f"Error cloning message {message.id}: PEER_ID_INVALID. Target: {target_channel}. Hint: Ensure the BOT is an admin in the target channel (or User is a member if using User mode).")
+                else:
+                    print(f"Error processing message {message.id} from {donor_channel}: {str(e)}")
                 continue
     
     except Exception as e:
@@ -153,7 +227,8 @@ async def download_and_clone_media_group(
             pair_id,
             caption,
             caption_entities,
-            reply_markup
+            reply_markup,
+            sender_client=_sender_client
         )
     finally:
         # Cleanup downloaded files

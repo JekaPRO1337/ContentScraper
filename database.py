@@ -41,6 +41,21 @@ class Database:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+
+            await db.execute('''
+                CREATE TABLE IF NOT EXISTS button_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mode TEXT NOT NULL,
+                    pattern1 TEXT NOT NULL,
+                    text1 TEXT NOT NULL,
+                    url1 TEXT NOT NULL,
+                    pattern2 TEXT,
+                    text2 TEXT,
+                    url2 TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
             
             # Processed messages (to avoid duplicates)
             await db.execute('''
@@ -52,7 +67,44 @@ class Database:
                     UNIQUE(channel_id, message_id)
                 )
             ''')
+
+            await db.execute('''
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    user_id INTEGER PRIMARY KEY,
+                    lang TEXT NOT NULL DEFAULT 'ru',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
             
+            await db.commit()
+
+    async def get_user_lang(self, user_id: int) -> str:
+        """Get user language preference"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(
+                'SELECT lang FROM user_settings WHERE user_id = ?',
+                (int(user_id),)
+            ) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row and row[0] else 'ru'
+
+    async def set_user_lang(self, user_id: int, lang: str):
+        """Set user language preference"""
+        lang = (lang or 'ru').lower()
+        if lang not in {'ru', 'en'}:
+            lang = 'ru'
+
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                '''
+                INSERT INTO user_settings (user_id, lang, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    lang = excluded.lang,
+                    updated_at = CURRENT_TIMESTAMP
+                ''',
+                (int(user_id), lang)
+            )
             await db.commit()
 
     async def add_channel_pair(self, donor_channel: str, target_channel: str):
@@ -72,11 +124,52 @@ class Database:
             await db.commit()
             return pair_id
 
+    async def _reset_sequences(self, db: aiosqlite.Connection, names: list[str]):
+        placeholders = ",".join(["?"] * len(names))
+        await db.execute(f"DELETE FROM sqlite_sequence WHERE name IN ({placeholders})", names)
+
     async def remove_channel_pair(self, pair_id: int):
         """Remove a channel pair"""
+        donor_channel = None
         async with aiosqlite.connect(self.db_path) as db:
+            # Get channel info to clear processed messages
+            async with db.execute('SELECT donor_channel FROM channel_pairs WHERE id = ?', (pair_id,)) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    donor_channel = row[0]
+                    # Try to normalize if it's an ID
+                    await db.execute('DELETE FROM processed_messages WHERE channel_id = ?', (donor_channel,))
+                    # Also try to delete by normalized ID just in case
+                    if donor_channel.startswith("-100"):
+                         await db.execute('DELETE FROM processed_messages WHERE channel_id = ?', (donor_channel,))
+
             await db.execute('DELETE FROM channel_pairs WHERE id = ?', (pair_id,))
             await db.execute('DELETE FROM statistics WHERE pair_id = ?', (pair_id,))
+
+            async with db.execute('SELECT COUNT(1) FROM channel_pairs') as cursor:
+                row = await cursor.fetchone()
+                if row and int(row[0]) == 0:
+                    await self._reset_sequences(db, ["channel_pairs", "statistics"])
+
+            await db.commit()
+            return donor_channel
+
+    async def clear_data(self, include_rules: bool = False):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('DELETE FROM processed_messages')
+            await db.execute('DELETE FROM statistics')
+            await db.execute('DELETE FROM channel_pairs')
+
+            names = ["processed_messages", "statistics", "channel_pairs"]
+
+            if include_rules:
+                await db.execute('DELETE FROM link_rules')
+                names.append("link_rules")
+
+                await db.execute('DELETE FROM button_rules')
+                names.append("button_rules")
+
+            await self._reset_sequences(db, names)
             await db.commit()
 
     async def get_all_pairs(self):
@@ -136,6 +229,54 @@ class Database:
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 'SELECT * FROM link_rules WHERE enabled = 1'
+            ) as cursor:
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+
+    async def add_button_rule(
+        self,
+        mode: str,
+        pattern1: str,
+        text1: str,
+        url1: str,
+        pattern2: str | None = None,
+        text2: str | None = None,
+        url2: str | None = None,
+    ):
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                '''
+                INSERT INTO button_rules (mode, pattern1, text1, url1, pattern2, text2, url2)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''',
+                (
+                    mode,
+                    pattern1,
+                    text1,
+                    url1,
+                    pattern2,
+                    text2,
+                    url2,
+                )
+            )
+            await db.commit()
+            return cursor.lastrowid
+
+    async def remove_button_rule(self, rule_id: int):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('DELETE FROM button_rules WHERE id = ?', (rule_id,))
+            await db.commit()
+
+    async def clear_button_rules(self):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('DELETE FROM button_rules')
+            await db.commit()
+
+    async def get_all_button_rules(self):
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                'SELECT * FROM button_rules WHERE enabled = 1 ORDER BY id ASC'
             ) as cursor:
                 rows = await cursor.fetchall()
                 return [dict(row) for row in rows]

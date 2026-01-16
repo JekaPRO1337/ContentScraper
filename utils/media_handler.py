@@ -8,10 +8,26 @@ import asyncio
 
 async def send_message_with_retry(client: Client, chat_id, **kwargs):
     """Send a message with FloodWait retry logic"""
+    send_fn = client.send_message
+    if 'photo' in kwargs:
+        send_fn = client.send_photo
+    elif 'video' in kwargs:
+        send_fn = client.send_video
+    elif 'document' in kwargs:
+        send_fn = client.send_document
+    elif 'audio' in kwargs:
+        send_fn = client.send_audio
+    elif 'voice' in kwargs:
+        send_fn = client.send_voice
+    elif 'sticker' in kwargs:
+        send_fn = client.send_sticker
+    elif 'video_note' in kwargs:
+        send_fn = client.send_video_note
+
     retries = 0
     while retries < MAX_FLOODWAIT_RETRIES:
         try:
-            return await client.send_message(chat_id=chat_id, **kwargs)
+            return await send_fn(chat_id=chat_id, **kwargs)
         except Exception as e:
             error_msg = str(e)
             if "FLOOD_WAIT" in error_msg or "flood" in error_msg.lower():
@@ -30,13 +46,31 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
                 if retries < MAX_FLOODWAIT_RETRIES:
                     await asyncio.sleep(wait_time)
                     continue
+            
+            if "PEER_ID_INVALID" in error_msg and retries == 0:
+                # Try to resolve peer and retry
+                try:
+                    await client.get_chat(chat_id)
+                    retries += 1
+                    continue
+                except Exception as resolve_error:
+                    print(f"Failed to resolve peer {chat_id}: {resolve_error}")
+
             raise
 
 
-async def download_and_clone_message(client: Client, message: Message, target_channel: str, pair_id: int):
+async def download_and_clone_message(
+    client: Client,
+    message: Message,
+    target_channel: str,
+    pair_id: int,
+    sender_client: Client | None = None,
+):
     """Download media and clone message to target channel (for closed channels)"""
     from database import db
     import os
+
+    sender = sender_client or client
     
     # Replace markup if exists
     reply_markup = None
@@ -56,7 +90,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
         # Handle different media types using downloaded file or file_id
         if message.photo:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 photo=file_path if file_path else message.photo.file_id,
                 caption=message.caption,
@@ -65,7 +99,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
             )
         elif message.video:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 video=file_path if file_path else message.video.file_id,
                 caption=message.caption,
@@ -74,7 +108,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
             )
         elif message.document:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 document=file_path if file_path else message.document.file_id,
                 caption=message.caption,
@@ -83,7 +117,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
             )
         elif message.audio:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 audio=file_path if file_path else message.audio.file_id,
                 caption=message.caption,
@@ -92,7 +126,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
             )
         elif message.voice:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 voice=file_path if file_path else message.voice.file_id,
                 caption=message.caption,
@@ -101,14 +135,14 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
             )
         elif message.video_note:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 video_note=message.video_note.file_id,
                 reply_markup=reply_markup
             )
         elif message.sticker:
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 sticker=message.sticker.file_id,
                 reply_markup=reply_markup
@@ -116,7 +150,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
         elif message.text or message.caption:
             # Text message
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 text=message.text or message.caption,
                 entities=message.entities or message.caption_entities,
@@ -125,7 +159,7 @@ async def download_and_clone_message(client: Client, message: Message, target_ch
         else:
             # Fallback: try to copy the message
             await send_message_with_retry(
-                client,
+                sender,
                 chat_id=target_channel,
                 text="[Unsupported message type]",
                 reply_markup=reply_markup
@@ -160,10 +194,13 @@ async def clone_media_group(
     pair_id: int,
     caption: str = None,
     caption_entities = None,
-    reply_markup = None
+    reply_markup = None,
+    sender_client: Client | None = None,
 ):
     """Clone a media group (album) to target channel using downloaded files"""
     from database import db
+
+    sender = sender_client or client
     
     if not messages_data:
         return
@@ -213,13 +250,13 @@ async def clone_media_group(
             while retries < MAX_FLOODWAIT_RETRIES:
                 try:
                     # Send media group
-                    result = await client.send_media_group(
+                    result = await sender.send_media_group(
                         chat_id=target_channel,
                         media=media
                     )
                     # Edit first message to add reply_markup if needed
                     if result and reply_markup:
-                        await client.edit_message_reply_markup(
+                        await sender.edit_message_reply_markup(
                             chat_id=target_channel,
                             message_id=result[0].id,
                             reply_markup=reply_markup
