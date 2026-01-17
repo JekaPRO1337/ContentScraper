@@ -9,7 +9,6 @@ class Database:
     async def init_db(self):
         """Initialize database with required tables"""
         async with aiosqlite.connect(self.db_path) as db:
-            # Channel pairs table
             await db.execute('''
                 CREATE TABLE IF NOT EXISTS channel_pairs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,6 +18,12 @@ class Database:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            async with db.execute("PRAGMA table_info(channel_pairs)") as cursor:
+                columns = [row[1] for row in await cursor.fetchall()]
+            if "realtime_enabled" not in columns:
+                await db.execute(
+                    "ALTER TABLE channel_pairs ADD COLUMN realtime_enabled INTEGER NOT NULL DEFAULT 0"
+                )
             
             # Statistics table
             await db.execute('''
@@ -185,6 +190,21 @@ class Database:
                 rows = await cursor.fetchall()
                 return [dict(row) for row in rows]
 
+    async def get_pair_by_id(self, pair_id: int):
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                '''
+                SELECT cp.*, s.posts_cloned, s.last_cloned_at
+                FROM channel_pairs cp
+                LEFT JOIN statistics s ON cp.id = s.pair_id
+                WHERE cp.id = ?
+                ''',
+                (pair_id,),
+            ) as cursor:
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+
     async def get_pair_by_donor(self, donor_channel: str):
         """Get channel pair by donor channel"""
         async with aiosqlite.connect(self.db_path) as db:
@@ -195,6 +215,14 @@ class Database:
             ) as cursor:
                 row = await cursor.fetchone()
                 return dict(row) if row else None
+
+    async def set_realtime_enabled(self, pair_id: int, enabled: bool):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                'UPDATE channel_pairs SET realtime_enabled = ? WHERE id = ?',
+                (1 if enabled else 0, pair_id),
+            )
+            await db.commit()
 
     async def increment_statistics(self, pair_id: int):
         """Increment post count for a channel pair"""

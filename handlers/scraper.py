@@ -127,6 +127,10 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
                 # Check if already processed (double check)
                 if await db.is_message_processed(channel_key, message.id):
                     continue
+
+                if getattr(message, "service", False):
+                    await db.mark_message_processed(channel_key, message.id)
+                    continue
                 
                 # Handle media groups
                 if message.media_group_id:
@@ -178,6 +182,233 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
     
     except Exception as e:
         print(f"Error monitoring channel {donor_channel}: {str(e)}")
+
+
+async def scrape_latest_n_messages(client: Client, pair_id: int, limit: int):
+    pair = await db.get_pair_by_id(pair_id)
+    if not pair:
+        return
+    donor_channel = pair["donor_channel"]
+    target_channel = pair["target_channel"]
+    try:
+        chat = await _resolve_chat(client, donor_channel)
+    except Exception as e:
+        print(f"Error getting chat {donor_channel} for latest scrape: {str(e)}")
+        return
+
+    channel_key = donor_channel
+    messages_list = []
+    try:
+        async for message in client.get_chat_history(chat.id, limit=limit):
+            if await db.is_message_processed(channel_key, message.id):
+                continue
+            messages_list.append(message)
+    except Exception as e:
+        print(f"Error getting chat history for {donor_channel} (latest): {str(e)}")
+        return
+
+    if not messages_list:
+        return
+
+    messages_list.reverse()
+
+    for message in messages_list:
+        try:
+            if await db.is_message_processed(channel_key, message.id):
+                continue
+
+            if getattr(message, "service", False):
+                await db.mark_message_processed(channel_key, message.id)
+                continue
+
+            if message.media_group_id:
+                group_messages = [message]
+                group_id = message.media_group_id
+                await asyncio.sleep(1)
+                async for msg in client.get_chat_history(chat.id, limit=20):
+                    if msg.media_group_id == group_id and msg.id != message.id:
+                        if not await db.is_message_processed(channel_key, msg.id):
+                            group_messages.append(msg)
+                group_messages.sort(key=lambda x: x.id)
+                await download_and_clone_media_group(
+                    client,
+                    group_messages,
+                    target_channel,
+                    pair_id,
+                )
+                for msg in group_messages:
+                    await db.mark_message_processed(channel_key, msg.id)
+            else:
+                await download_and_clone_message(
+                    client,
+                    message,
+                    target_channel,
+                    pair_id,
+                    sender_client=_sender_client,
+                )
+                await db.mark_message_processed(channel_key, message.id)
+        except Exception as e:
+            if "PEER_ID_INVALID" in str(e):
+                print(
+                    f"Error cloning message {message.id}: PEER_ID_INVALID. Target: {target_channel}. Hint: Ensure the BOT is an admin in the target channel (or User is a member if using User mode)."
+                )
+            else:
+                print(
+                    f"Error processing message {message.id} from {donor_channel} (latest): {str(e)}"
+                )
+            continue
+
+
+async def scrape_full_history(client: Client, pair_id: int):
+    pair = await db.get_pair_by_id(pair_id)
+    if not pair:
+        return
+    donor_channel = pair["donor_channel"]
+    target_channel = pair["target_channel"]
+    try:
+        chat = await _resolve_chat(client, donor_channel)
+    except Exception as e:
+        print(f"Error getting chat {donor_channel} for full scrape: {str(e)}")
+        return
+
+    channel_key = donor_channel
+    offset_id = 0
+
+    while True:
+        batch = []
+        try:
+            async for message in client.get_chat_history(
+                chat.id, offset_id=offset_id, limit=100
+            ):
+                batch.append(message)
+        except Exception as e:
+            print(f"Error getting chat history for {donor_channel} (full): {str(e)}")
+            return
+
+        if not batch:
+            break
+
+        for message in batch:
+            try:
+                if await db.is_message_processed(channel_key, message.id):
+                    continue
+
+                if getattr(message, "service", False):
+                    await db.mark_message_processed(channel_key, message.id)
+                    continue
+
+                if message.media_group_id:
+                    group_messages = [message]
+                    group_id = message.media_group_id
+                    await asyncio.sleep(1)
+                    async for msg in client.get_chat_history(chat.id, limit=20):
+                        if msg.media_group_id == group_id and msg.id != message.id:
+                            if not await db.is_message_processed(channel_key, msg.id):
+                                group_messages.append(msg)
+                    group_messages.sort(key=lambda x: x.id)
+                    await download_and_clone_media_group(
+                        client,
+                        group_messages,
+                        target_channel,
+                        pair_id,
+                    )
+                    for msg in group_messages:
+                        await db.mark_message_processed(channel_key, msg.id)
+                else:
+                    await download_and_clone_message(
+                        client,
+                        message,
+                        target_channel,
+                        pair_id,
+                        sender_client=_sender_client,
+                    )
+                    await db.mark_message_processed(channel_key, message.id)
+            except Exception as e:
+                if "PEER_ID_INVALID" in str(e):
+                    print(
+                        f"Error cloning message {message.id}: PEER_ID_INVALID. Target: {target_channel}. Hint: Ensure the BOT is an admin in the target channel (or User is a member if using User mode)."
+                    )
+                else:
+                    print(
+                        f"Error processing message {message.id} from {donor_channel} (full): {str(e)}"
+                    )
+                continue
+
+        offset_id = batch[-1].id
+
+
+async def scrape_first_n_messages(client: Client, pair_id: int, limit: int):
+    pair = await db.get_pair_by_id(pair_id)
+    if not pair:
+        return
+    donor_channel = pair["donor_channel"]
+    target_channel = pair["target_channel"]
+    try:
+        chat = await _resolve_chat(client, donor_channel)
+    except Exception as e:
+        print(f"Error getting chat {donor_channel} for first-n scrape: {str(e)}")
+        return
+
+    channel_key = donor_channel
+    buffer = []
+    offset_id = 0
+
+    while True:
+        batch = []
+        try:
+            async for message in client.get_chat_history(
+                chat.id, offset_id=offset_id, limit=100
+            ):
+                batch.append(message)
+        except Exception as e:
+            print(f"Error getting chat history for {donor_channel} (first-n): {str(e)}")
+            return
+
+        if not batch:
+            break
+
+        for message in batch:
+            if await db.is_message_processed(channel_key, message.id):
+                continue
+            if getattr(message, "service", False):
+                await db.mark_message_processed(channel_key, message.id)
+                continue
+            if message.media_group_id:
+                continue
+            buffer.insert(0, message)
+            if len(buffer) > limit:
+                buffer.pop()
+
+        offset_id = batch[-1].id
+
+    if not buffer:
+        return
+
+    buffer.sort(key=lambda x: x.id)
+
+    for message in buffer:
+        try:
+            if await db.is_message_processed(channel_key, message.id):
+                continue
+
+            await download_and_clone_message(
+                client,
+                message,
+                target_channel,
+                pair_id,
+                sender_client=_sender_client,
+            )
+            await db.mark_message_processed(channel_key, message.id)
+        except Exception as e:
+            if "PEER_ID_INVALID" in str(e):
+                print(
+                    f"Error cloning message {message.id}: PEER_ID_INVALID. Target: {target_channel}. Hint: Ensure the BOT is an admin in the target channel (or User is a member if using User mode)."
+                )
+            else:
+                print(
+                    f"Error processing message {message.id} from {donor_channel} (first-n): {str(e)}"
+                )
+            continue
 
 
 async def download_and_clone_media_group(
@@ -252,6 +483,8 @@ async def start_monitoring(client: Client):
             # Monitor each pair
             tasks = []
             for pair in pairs:
+                if not pair.get('realtime_enabled'):
+                    continue
                 task = monitor_channel(
                     client,
                     pair['donor_channel'],

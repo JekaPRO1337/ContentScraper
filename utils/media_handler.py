@@ -77,17 +77,31 @@ async def download_and_clone_message(
     if message.reply_markup:
         reply_markup = await replace_markup(message.reply_markup)
     
-    # Handle media groups (albums) - should be handled separately
     if message.media_group_id:
         return None
     
+    if getattr(message, "service", False):
+        return
+
+    has_supported_type = bool(
+        message.photo
+        or message.video
+        or message.document
+        or message.audio
+        or message.voice
+        or message.video_note
+        or message.sticker
+        or message.text
+        or message.caption
+    )
+    if not has_supported_type:
+        return
+
     file_path = None
     try:
-        # Download media if present (for closed channels)
         if message.photo or message.video or message.document or message.audio or message.voice:
             file_path = await client.download_media(message)
         
-        # Handle different media types using downloaded file or file_id
         if message.photo:
             await send_message_with_retry(
                 sender,
@@ -148,7 +162,6 @@ async def download_and_clone_message(
                 reply_markup=reply_markup
             )
         elif message.text or message.caption:
-            # Text message
             await send_message_with_retry(
                 sender,
                 chat_id=target_channel,
@@ -157,15 +170,8 @@ async def download_and_clone_message(
                 reply_markup=reply_markup
             )
         else:
-            # Fallback: try to copy the message
-            await send_message_with_retry(
-                sender,
-                chat_id=target_channel,
-                text="[Unsupported message type]",
-                reply_markup=reply_markup
-            )
+            return
         
-        # Update statistics
         await db.increment_statistics(pair_id)
         
     except Exception as e:
