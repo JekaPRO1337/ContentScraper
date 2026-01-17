@@ -117,8 +117,8 @@ def _t(lang: str, key: str) -> str:
             "btn_scrape_latest": "▶️ Скрап N последних постов",
             "btn_scrape_first": "⏮️ Скрап N первых постов",
             "btn_scrape_full": "📥 Полный скрап",
-            "btn_scrape_realtime_on": "🔄 Скрап в реальном времени: Включить",
-            "btn_scrape_realtime_off": "🔄 Скрап в реальном времени: Отключить",
+            "btn_scrape_realtime_on": "🔄 Скрап в реальном времени: Включён",
+            "btn_scrape_realtime_off": "🔄 Скрап в реальном времени: Выключен",
             "scrape_full_confirm": "Вы уверены, что хотите запустить полный скрап для этой пары?\nЭто может занять время при большом количестве постов.",
             "scrape_started_latest": "Запущен скрап {n} последних постов для пары {pair_id}.",
             "scrape_started_first": "Запущен скрап {n} первых постов для пары {pair_id}.",
@@ -126,6 +126,14 @@ def _t(lang: str, key: str) -> str:
             "scrape_no_pair": "Пара не найдена.",
             "realtime_enabled": "Режим скрапа в реальном времени включён для пары {pair_id}.",
             "realtime_disabled": "Режим скрапа в реальном времени выключен для пары {pair_id}.",
+            "scrape_choose_n_latest": "**▶️ Скрап последних постов**\n\nВыберите, сколько последних сообщений скрапить:",
+            "scrape_choose_n_first": "**⏮️ Скрап первых постов**\n\nВыберите, сколько самых старых сообщений скрапить:",
+            "btn_scrape_n_10": "10",
+            "btn_scrape_n_50": "50",
+            "btn_scrape_n_100": "100",
+            "btn_scrape_n_200": "200",
+            "btn_scrape_reset": "♻️ Сбросить прогресс скрапа",
+            "scrape_reset_done": "Прогресс скрапа и счётчик постов для пары {pair_id} сброшены. Можно скрапить заново.",
         },
         "en": {
             "admin_panel_title": "**🤖 Admin Panel**\n\nSelect an option:",
@@ -201,8 +209,8 @@ def _t(lang: str, key: str) -> str:
             "btn_scrape_latest": "▶️ Scrape N latest posts",
             "btn_scrape_first": "⏮️ Scrape N first posts",
             "btn_scrape_full": "📥 Full scrape",
-            "btn_scrape_realtime_on": "🔄 Realtime scraping: Enable",
-            "btn_scrape_realtime_off": "🔄 Realtime scraping: Disable",
+            "btn_scrape_realtime_on": "🔄 Realtime scraping: Enabled",
+            "btn_scrape_realtime_off": "🔄 Realtime scraping: Disabled",
             "scrape_full_confirm": "Are you sure you want to start a full scrape for this pair?\nThis may take time for large channels.",
             "scrape_started_latest": "Started scraping {n} latest posts for pair {pair_id}.",
             "scrape_started_first": "Started scraping {n} first posts for pair {pair_id}.",
@@ -210,6 +218,14 @@ def _t(lang: str, key: str) -> str:
             "scrape_no_pair": "Channel pair not found.",
             "realtime_enabled": "Realtime scraping mode enabled for pair {pair_id}.",
             "realtime_disabled": "Realtime scraping mode disabled for pair {pair_id}.",
+            "scrape_choose_n_latest": "**▶️ Scrape latest posts**\n\nChoose how many latest messages to scrape:",
+            "scrape_choose_n_first": "**⏮️ Scrape first posts**\n\nChoose how many oldest messages to scrape:",
+            "btn_scrape_n_10": "10",
+            "btn_scrape_n_50": "50",
+            "btn_scrape_n_100": "100",
+            "btn_scrape_n_200": "200",
+            "btn_scrape_reset": "♻️ Reset scrape progress",
+            "scrape_reset_done": "Scrape progress and post counter for pair {pair_id} have been reset. You can scrape again.",
         },
     }
 
@@ -359,27 +375,33 @@ async def handle_scrape_pair(client: Client, callback_query, pair_id: int):
 
     realtime_enabled = bool(pair.get("realtime_enabled"))
     if realtime_enabled:
-        realtime_button_text = _t(lang, "btn_scrape_realtime_off")
-    else:
         realtime_button_text = _t(lang, "btn_scrape_realtime_on")
+    else:
+        realtime_button_text = _t(lang, "btn_scrape_realtime_off")
 
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
                 _t(lang, "btn_scrape_latest").replace("N", str(SCRAPE_N)),
-                callback_data=f"admin_scrape_latest:{pair_id}",
+                callback_data=f"admin_scrape_latest_choose:{pair_id}",
             )
         ],
         [
             InlineKeyboardButton(
                 _t(lang, "btn_scrape_first").replace("N", str(SCRAPE_N)),
-                callback_data=f"admin_scrape_first:{pair_id}",
+                callback_data=f"admin_scrape_first_choose:{pair_id}",
             )
         ],
         [
             InlineKeyboardButton(
                 _t(lang, "btn_scrape_full"),
                 callback_data=f"admin_scrape_full_confirm:{pair_id}",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_reset"),
+                callback_data=f"admin_scrape_reset:{pair_id}",
             )
         ],
         [
@@ -527,7 +549,9 @@ async def handle_language_menu(client: Client, callback_query):
 async def handle_scrape_latest(client: Client, callback_query):
     lang = await _get_lang_from_callback(callback_query)
     try:
-        pair_id = int(callback_query.data.split(":", 1)[1])
+        _, pair_part, n_part = callback_query.data.split(":", 2)
+        pair_id = int(pair_part)
+        n = int(n_part)
     except Exception:
         await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
         return
@@ -538,16 +562,41 @@ async def handle_scrape_latest(client: Client, callback_query):
         return
 
     worker_client = _user_client or client
-    asyncio.create_task(scrape_latest_n_messages(worker_client, pair_id, SCRAPE_N))
+    asyncio.create_task(scrape_latest_n_messages(worker_client, pair_id, n))
 
     await callback_query.answer(
-        _t(lang, "scrape_started_latest").format(n=SCRAPE_N, pair_id=pair_id),
+        _t(lang, "scrape_started_latest").format(n=n, pair_id=pair_id),
         show_alert=True,
     )
     await handle_scrape_pair(client, callback_query, pair_id)
 
 
 async def handle_scrape_first(client: Client, callback_query):
+    lang = await _get_lang_from_callback(callback_query)
+    try:
+        _, pair_part, n_part = callback_query.data.split(":", 2)
+        pair_id = int(pair_part)
+        n = int(n_part)
+    except Exception:
+        await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+
+    pair = await db.get_pair_by_id(pair_id)
+    if not pair:
+        await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+
+    worker_client = _user_client or client
+    asyncio.create_task(scrape_first_n_messages(worker_client, pair_id, n))
+
+    await callback_query.answer(
+        _t(lang, "scrape_started_first").format(n=n, pair_id=pair_id),
+        show_alert=True,
+    )
+    await handle_scrape_pair(client, callback_query, pair_id)
+
+
+async def handle_scrape_latest_choose(client: Client, callback_query):
     lang = await _get_lang_from_callback(callback_query)
     try:
         pair_id = int(callback_query.data.split(":", 1)[1])
@@ -560,14 +609,83 @@ async def handle_scrape_first(client: Client, callback_query):
         await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
         return
 
-    worker_client = _user_client or client
-    asyncio.create_task(scrape_first_n_messages(worker_client, pair_id, SCRAPE_N))
+    text = _t(lang, "scrape_choose_n_latest")
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_10"),
+                callback_data=f"admin_scrape_latest:{pair_id}:10",
+            ),
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_50"),
+                callback_data=f"admin_scrape_latest:{pair_id}:50",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_100"),
+                callback_data=f"admin_scrape_latest:{pair_id}:100",
+            ),
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_200"),
+                callback_data=f"admin_scrape_latest:{pair_id}:200",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_back"),
+                callback_data=f"admin_scrape_pair:{pair_id}",
+            )
+        ],
+    ])
 
-    await callback_query.answer(
-        _t(lang, "scrape_started_first").format(n=SCRAPE_N, pair_id=pair_id),
-        show_alert=True,
-    )
-    await handle_scrape_pair(client, callback_query, pair_id)
+    await callback_query.edit_message_text(text, reply_markup=keyboard)
+
+
+async def handle_scrape_first_choose(client: Client, callback_query):
+    lang = await _get_lang_from_callback(callback_query)
+    try:
+        pair_id = int(callback_query.data.split(":", 1)[1])
+    except Exception:
+        await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+
+    pair = await db.get_pair_by_id(pair_id)
+    if not pair:
+        await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+
+    text = _t(lang, "scrape_choose_n_first")
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_10"),
+                callback_data=f"admin_scrape_first:{pair_id}:10",
+            ),
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_50"),
+                callback_data=f"admin_scrape_first:{pair_id}:50",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_100"),
+                callback_data=f"admin_scrape_first:{pair_id}:100",
+            ),
+            InlineKeyboardButton(
+                _t(lang, "btn_scrape_n_200"),
+                callback_data=f"admin_scrape_first:{pair_id}:200",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_back"),
+                callback_data=f"admin_scrape_pair:{pair_id}",
+            )
+        ],
+    ])
+
+    await callback_query.edit_message_text(text, reply_markup=keyboard)
 
 
 async def handle_scrape_full_confirm(client: Client, callback_query):
@@ -650,6 +768,29 @@ async def handle_scrape_realtime_toggle(client: Client, callback_query):
     await handle_scrape_pair(client, callback_query, pair_id)
 
 
+async def handle_scrape_reset(client: Client, callback_query):
+    lang = await _get_lang_from_callback(callback_query)
+    try:
+        pair_id = int(callback_query.data.split(":", 1)[1])
+    except Exception:
+        await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+
+    pair = await db.get_pair_by_id(pair_id)
+    if not pair:
+        await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+
+    await db.reset_pair_progress(pair_id)
+    clear_memory_cache(pair["donor_channel"])
+
+    await callback_query.answer(
+        _t(lang, "scrape_reset_done").format(pair_id=pair_id),
+        show_alert=True,
+    )
+    await handle_scrape_pair(client, callback_query, pair_id)
+
+
 async def handle_set_language(client: Client, callback_query, lang_code: str):
     """Persist language selection"""
     user_id = callback_query.from_user.id
@@ -703,12 +844,18 @@ async def handle_admin_menu_callback(client: Client, callback_query):
         await handle_scrape_latest(client, callback_query)
     elif data.startswith("admin_scrape_first:"):
         await handle_scrape_first(client, callback_query)
+    elif data.startswith("admin_scrape_latest_choose:"):
+        await handle_scrape_latest_choose(client, callback_query)
+    elif data.startswith("admin_scrape_first_choose:"):
+        await handle_scrape_first_choose(client, callback_query)
     elif data.startswith("admin_scrape_full_confirm:"):
         await handle_scrape_full_confirm(client, callback_query)
     elif data.startswith("admin_scrape_full:"):
         await handle_scrape_full(client, callback_query)
     elif data.startswith("admin_scrape_realtime_toggle:"):
         await handle_scrape_realtime_toggle(client, callback_query)
+    elif data.startswith("admin_scrape_reset:"):
+        await handle_scrape_reset(client, callback_query)
     elif data == "admin_language":
         await callback_query.answer()
         await handle_language_menu(client, callback_query)

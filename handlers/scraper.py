@@ -288,6 +288,8 @@ async def scrape_full_history(client: Client, pair_id: int):
         if not batch:
             break
 
+        batch.sort(key=lambda x: x.id)
+
         for message in batch:
             try:
                 if await db.is_message_processed(channel_key, message.id):
@@ -334,7 +336,7 @@ async def scrape_full_history(client: Client, pair_id: int):
                     )
                 continue
 
-        offset_id = batch[-1].id
+        offset_id = batch[0].id
 
 
 async def scrape_first_n_messages(client: Client, pair_id: int, limit: int):
