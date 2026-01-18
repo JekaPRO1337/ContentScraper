@@ -99,11 +99,19 @@ def _t(lang: str, key: str) -> str:
             "remove_success": "✅ Пара каналов {pair_id} успешно удалена!",
             "remove_invalid": "❌ Некорректный ID пары. Укажите число.",
             "addrule_usage": "**Использование:** `/addrule <pattern> [replacement]`\n\n"
+                             "Что такое pattern и replacement:\n"
+                             "• pattern — слово/фраза для поиска. Можно начать с `regex:` для регулярного выражения.\n"
+                             "• replacement — чем заменить. Необязательный параметр: если не указан, слово будет удалено.\n\n"
+                             "Как работает замена:\n"
+                             "• Регистр игнорируется (Parimatch = париматч).\n"
+                             "• Можно создавать много правил — они применяются по очереди.\n"
+                             "• Гиперссылка в формате Markdown: `[текст](https://example.com)`.\n\n"
                              "Примеры:\n"
                              "• Удалить слово: `/addrule Париматч`\n"
                              "• Заменить на текст: `/addrule Parimatch Мойтекст`\n"
-                             "• Заменить на гиперссылку: `/addrule Париматч [Наш партнёр](https://example.com)`\n"
-                             "• Regex для вариаций: `/addrule regex:(parimatch|париматч)\\d* [Ссылка](https://example.com)`",
+                             "• Заменить на гиперссылку: `/addrule Favbet [Наш партнёр](https://example.com)`\n"
+                             "• Regex для вариаций: `/addrule regex:(parimatch|парик|париматч)\\d* [Ссылка](https://example.com)`\n"
+                             "• Удалить вариации по regex: `/addrule regex:(Parik|Парик)\\d*`",
             "addrule_required": "❌ Шаблон обязателен.",
             "addrule_success": "✅ Правило добавлено!\n\n**ID правила:** {rule_id}\n**Шаблон:** `{pattern}`\n**Замена:** `{replacement}`",
             "removerule_usage": "**Использование:** `/removerule <rule_id>`",
@@ -147,10 +155,15 @@ def _t(lang: str, key: str) -> str:
             "link_rules_commands": "**Команды:**\n"
                                   "`/addrule <pattern> [replacement]` — добавить правило\n"
                                   "`/removerule <rule_id>` — удалить правило\n\n"
-                                  "Можно создавать много правил — они применяются по очереди.\n"
-                                  "Шаблон может быть обычным текстом или начинаться с `regex:` для\n"
-                                  "регулярных выражений. Замена может содержать текст и ссылки,\n"
-                                  "включая формат Markdown `[текст](https://example.com)`.",
+                                  "**Примеры:**\n"
+                                  "• Удаление: `/addrule Париматч`\n"
+                                  "• Замена текстом: `/addrule Parimatch 1win`\n"
+                                  "• Замена гиперссылкой: `/addrule Favbet [Наш сайт](https://site.ua)`\n"
+                                  "• Regex: `/addrule regex:(parimatch|париматч)\\d* [Партнёр](https://example.com)`\n\n"
+                                  "Примечания:\n"
+                                  "• Можно создавать много правил — они применяются по очереди.\n"
+                                  "• Шаблон может быть текстом или `regex:`.\n"
+                                  "• Замена может содержать текст и ссылки (Markdown).",
         },
         "en": {
             "admin_panel_title": "**🤖 Admin Panel**\n\nSelect an option:",
@@ -208,7 +221,7 @@ def _t(lang: str, key: str) -> str:
             "remove_success": "✅ Channel pair {pair_id} removed successfully!",
             "remove_invalid": "❌ Invalid pair ID. Please provide a number.",
             "addrule_usage": "**Usage:** `/addrule <pattern> <replacement>`\n\nExample: `/addrule https://example.com https://myaffiliate.com`\nFor regex: `/addrule regex:example\\.com myaffiliate.com`",
-            "addrule_required": "❌ Pattern and replacement are required.",
+            "addrule_required": "❌ Pattern is required.",
             "addrule_success": "✅ Link rule added!\n\n**Rule ID:** {rule_id}\n**Pattern:** `{pattern}`\n**Replacement:** `{replacement}`",
             "removerule_usage": "**Usage:** `/removerule <rule_id>`",
             "removerule_success": "✅ Link rule {rule_id} removed successfully!",
@@ -249,11 +262,17 @@ def _t(lang: str, key: str) -> str:
             "link_rules_title": "**🧮 Keyword / link replacement**\n\n",
             "link_rules_none": "No rules configured yet.\n\n",
             "link_rules_commands": "**Commands:**\n"
-                                  "`/addrule <pattern> <replacement>` — add rule\n"
+                                  "`/addrule <pattern> [replacement]` — add rule\n"
                                   "`/removerule <rule_id>` — remove rule\n\n"
-                                  "Pattern can be plain text or start with `regex:` for regular\n"
-                                  "expressions. Replacement can contain text and links, including\n"
-                                  "Markdown format `[text](https://example.com)`.",
+                                  "**Examples:**\n"
+                                  "• Delete: `/addrule Parimatch`\n"
+                                  "• Replace with text: `/addrule Parimatch MyText`\n"
+                                  "• Replace with hyperlink: `/addrule Favbet [Partner](https://example.com)`\n"
+                                  "• Regex: `/addrule regex:(parimatch|parik)\\d* [Link](https://example.com)`\n\n"
+                                  "Notes:\n"
+                                  "• Multiple rules are supported and applied in order.\n"
+                                  "• Pattern can be plain text or `regex:`.\n"
+                                  "• Replacement may contain text or Markdown links.",
         },
     }
 
