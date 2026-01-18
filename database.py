@@ -177,6 +177,28 @@ class Database:
             await self._reset_sequences(db, names)
             await db.commit()
 
+    async def reset_pair_progress(self, pair_id: int):
+        async with aiosqlite.connect(self.db_path) as db:
+            donor_channel = None
+            async with db.execute(
+                'SELECT donor_channel FROM channel_pairs WHERE id = ?',
+                (pair_id,),
+            ) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    donor_channel = row[0]
+            if donor_channel is None:
+                return
+            await db.execute(
+                'DELETE FROM processed_messages WHERE channel_id = ?',
+                (donor_channel,),
+            )
+            await db.execute(
+                'UPDATE statistics SET posts_cloned = 0, last_cloned_at = NULL WHERE pair_id = ?',
+                (pair_id,),
+            )
+            await db.commit()
+
     async def get_all_pairs(self):
         """Get all channel pairs"""
         async with aiosqlite.connect(self.db_path) as db:

@@ -3,7 +3,9 @@ from pyrogram import Client
 from pyrogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
 from utils.button_replacer import replace_markup
 from config import FLOODWAIT_RETRY_DELAY, MAX_FLOODWAIT_RETRIES
+from database import db
 import asyncio
+import re
 
 
 async def send_message_with_retry(client: Client, chat_id, **kwargs):
@@ -59,6 +61,50 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
             raise
 
 
+async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+    if not text:
+        return text, None
+
+    rules = await db.get_all_link_rules()
+    if not rules:
+        return text, None
+
+    result = text
+    use_markdown = False
+
+    for rule in rules:
+        pattern = (rule.get("pattern") or "").strip()
+        replacement = rule.get("replacement") or ""
+        if not pattern:
+            continue
+
+        if pattern.startswith("regex:"):
+            try:
+                regex = re.compile(pattern[6:], re.IGNORECASE)
+            except Exception:
+                continue
+            if not regex.search(result):
+                continue
+            result = regex.sub(replacement, result)
+        else:
+            if pattern.lower() not in result.lower():
+                continue
+            try:
+                result = re.sub(
+                    re.escape(pattern),
+                    replacement,
+                    result,
+                    flags=re.IGNORECASE,
+                )
+            except Exception:
+                continue
+
+        if "[" in replacement and "](" in replacement:
+            use_markdown = True
+
+    return result, ("markdown" if use_markdown else None)
+
+
 async def download_and_clone_message(
     client: Client,
     message: Message,
@@ -67,7 +113,6 @@ async def download_and_clone_message(
     sender_client: Client | None = None,
 ):
     """Download media and clone message to target channel (for closed channels)"""
-    from database import db
     import os
 
     sender = sender_client or client
@@ -97,6 +142,19 @@ async def download_and_clone_message(
     if not has_supported_type:
         return
 
+    caption = message.caption
+    caption_entities = message.caption_entities
+    text_body = message.text
+    text_entities = message.entities
+
+    caption, caption_parse_mode = await apply_link_rules_to_text(caption)
+    if caption_parse_mode:
+        caption_entities = None
+
+    text_body, text_parse_mode = await apply_link_rules_to_text(text_body)
+    if text_parse_mode:
+        text_entities = None
+
     file_path = None
     try:
         if message.photo or message.video or message.document or message.audio or message.voice:
@@ -107,8 +165,9 @@ async def download_and_clone_message(
                 sender,
                 chat_id=target_channel,
                 photo=file_path if file_path else message.photo.file_id,
-                caption=message.caption,
-                caption_entities=message.caption_entities,
+                caption=caption,
+                caption_entities=caption_entities,
+                parse_mode=caption_parse_mode,
                 reply_markup=reply_markup
             )
         elif message.video:
@@ -116,8 +175,9 @@ async def download_and_clone_message(
                 sender,
                 chat_id=target_channel,
                 video=file_path if file_path else message.video.file_id,
-                caption=message.caption,
-                caption_entities=message.caption_entities,
+                caption=caption,
+                caption_entities=caption_entities,
+                parse_mode=caption_parse_mode,
                 reply_markup=reply_markup
             )
         elif message.document:
@@ -125,8 +185,9 @@ async def download_and_clone_message(
                 sender,
                 chat_id=target_channel,
                 document=file_path if file_path else message.document.file_id,
-                caption=message.caption,
-                caption_entities=message.caption_entities,
+                caption=caption,
+                caption_entities=caption_entities,
+                parse_mode=caption_parse_mode,
                 reply_markup=reply_markup
             )
         elif message.audio:
@@ -134,8 +195,9 @@ async def download_and_clone_message(
                 sender,
                 chat_id=target_channel,
                 audio=file_path if file_path else message.audio.file_id,
-                caption=message.caption,
-                caption_entities=message.caption_entities,
+                caption=caption,
+                caption_entities=caption_entities,
+                parse_mode=caption_parse_mode,
                 reply_markup=reply_markup
             )
         elif message.voice:
@@ -143,8 +205,9 @@ async def download_and_clone_message(
                 sender,
                 chat_id=target_channel,
                 voice=file_path if file_path else message.voice.file_id,
-                caption=message.caption,
-                caption_entities=message.caption_entities,
+                caption=caption,
+                caption_entities=caption_entities,
+                parse_mode=caption_parse_mode,
                 reply_markup=reply_markup
             )
         elif message.video_note:
@@ -165,8 +228,9 @@ async def download_and_clone_message(
             await send_message_with_retry(
                 sender,
                 chat_id=target_channel,
-                text=message.text or message.caption,
-                entities=message.entities or message.caption_entities,
+                text=text_body or caption,
+                entities=text_entities or caption_entities,
+                parse_mode=text_parse_mode or caption_parse_mode,
                 reply_markup=reply_markup
             )
         else:
@@ -201,6 +265,7 @@ async def clone_media_group(
     caption: str = None,
     caption_entities = None,
     reply_markup = None,
+    caption_parse_mode: Optional[str] = None,
     sender_client: Client | None = None,
 ):
     """Clone a media group (album) to target channel using downloaded files"""
@@ -228,25 +293,29 @@ async def clone_media_group(
             media.append(InputMediaPhoto(
                 file_path if file_path else msg.photo.file_id,
                 caption=current_caption,
-                caption_entities=current_caption_entities
+                caption_entities=current_caption_entities,
+                parse_mode=caption_parse_mode if current_caption else None,
             ))
         elif msg.video:
             media.append(InputMediaVideo(
                 file_path if file_path else msg.video.file_id,
                 caption=current_caption,
-                caption_entities=current_caption_entities
+                caption_entities=current_caption_entities,
+                parse_mode=caption_parse_mode if current_caption else None,
             ))
         elif msg.document:
             media.append(InputMediaDocument(
                 file_path if file_path else msg.document.file_id,
                 caption=current_caption,
-                caption_entities=current_caption_entities
+                caption_entities=current_caption_entities,
+                parse_mode=caption_parse_mode if current_caption else None,
             ))
         elif msg.audio:
             media.append(InputMediaAudio(
                 file_path if file_path else msg.audio.file_id,
                 caption=current_caption,
-                caption_entities=current_caption_entities
+                caption_entities=current_caption_entities,
+                parse_mode=caption_parse_mode if current_caption else None,
             ))
     
     if media:

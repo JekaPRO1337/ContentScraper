@@ -98,7 +98,7 @@ def _t(lang: str, key: str) -> str:
             "remove_usage": "**Использование:** `/removepair <pair_id>`",
             "remove_success": "✅ Пара каналов {pair_id} успешно удалена!",
             "remove_invalid": "❌ Некорректный ID пары. Укажите число.",
-            "addrule_usage": "**Использование:** `/addrule <pattern> <replacement>`\n\nПример: `/addrule https://example.com https://myaffiliate.com`\nДля regex: `/addrule regex:example\\.com myaffiliate.com`",
+            "addrule_usage": "**Использование:** `/addrule <pattern> <replacement>`\n\nПримеры:\n`/addrule parimatch [Наш партнёр](https://example.com)`\n`/addrule regex:parimatch\\d* [Наш партнёр](https://example.com)`",
             "addrule_required": "❌ Шаблон и замена обязательны.",
             "addrule_success": "✅ Правило добавлено!\n\n**ID правила:** {rule_id}\n**Шаблон:** `{pattern}`\n**Замена:** `{replacement}`",
             "removerule_usage": "**Использование:** `/removerule <rule_id>`",
@@ -122,7 +122,9 @@ def _t(lang: str, key: str) -> str:
             "scrape_full_confirm": "Вы уверены, что хотите запустить полный скрап для этой пары?\nЭто может занять время при большом количестве постов.",
             "scrape_started_latest": "Запущен скрап {n} последних постов для пары {pair_id}.",
             "scrape_started_first": "Запущен скрап {n} первых постов для пары {pair_id}.",
-            "scrape_started_full": "Запущен полный скрап для пары {pair_id}.",
+            "scrape_started_full": "Запущен полный скрап для пары {pair_id}.\n\n"
+                                   "После завершения вы можете включить режим скрапа в реальном "
+                                   "времени кнопкой ниже.",
             "scrape_no_pair": "Пара не найдена.",
             "realtime_enabled": "Режим скрапа в реальном времени включён для пары {pair_id}.",
             "realtime_disabled": "Режим скрапа в реальном времени выключен для пары {pair_id}.",
@@ -134,6 +136,15 @@ def _t(lang: str, key: str) -> str:
             "btn_scrape_n_200": "200",
             "btn_scrape_reset": "♻️ Сбросить прогресс скрапа",
             "scrape_reset_done": "Прогресс скрапа и счётчик постов для пары {pair_id} сброшены. Можно скрапить заново.",
+            "btn_link_rules": "🧮 Замена ключевых слов",
+            "link_rules_title": "**🧮 Замена ключевых слов**\n\n",
+            "link_rules_none": "Правила ещё не настроены.\n\n",
+            "link_rules_commands": "**Команды:**\n"
+                                  "`/addrule <pattern> <replacement>` — добавить правило\n"
+                                  "`/removerule <rule_id>` — удалить правило\n\n"
+                                  "Шаблон может быть обычным текстом или начинаться с `regex:` для\n"
+                                  "регулярных выражений. Замена может содержать текст и ссылки,\n"
+                                  "включая формат Markdown `[текст](https://example.com)`.",
         },
         "en": {
             "admin_panel_title": "**🤖 Admin Panel**\n\nSelect an option:",
@@ -214,7 +225,9 @@ def _t(lang: str, key: str) -> str:
             "scrape_full_confirm": "Are you sure you want to start a full scrape for this pair?\nThis may take time for large channels.",
             "scrape_started_latest": "Started scraping {n} latest posts for pair {pair_id}.",
             "scrape_started_first": "Started scraping {n} first posts for pair {pair_id}.",
-            "scrape_started_full": "Started full scrape for pair {pair_id}.",
+            "scrape_started_full": "Started full scrape for pair {pair_id}.\n\n"
+                                   "When it finishes you can enable realtime scraping using the "
+                                   "button below.",
             "scrape_no_pair": "Channel pair not found.",
             "realtime_enabled": "Realtime scraping mode enabled for pair {pair_id}.",
             "realtime_disabled": "Realtime scraping mode disabled for pair {pair_id}.",
@@ -226,6 +239,15 @@ def _t(lang: str, key: str) -> str:
             "btn_scrape_n_200": "200",
             "btn_scrape_reset": "♻️ Reset scrape progress",
             "scrape_reset_done": "Scrape progress and post counter for pair {pair_id} have been reset. You can scrape again.",
+            "btn_link_rules": "🧮 Keyword replacement",
+            "link_rules_title": "**🧮 Keyword / link replacement**\n\n",
+            "link_rules_none": "No rules configured yet.\n\n",
+            "link_rules_commands": "**Commands:**\n"
+                                  "`/addrule <pattern> <replacement>` — add rule\n"
+                                  "`/removerule <rule_id>` — remove rule\n\n"
+                                  "Pattern can be plain text or start with `regex:` for regular\n"
+                                  "expressions. Replacement can contain text and links, including\n"
+                                  "Markdown format `[text](https://example.com)`.",
         },
     }
 
@@ -262,9 +284,10 @@ def _admin_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(_t(lang, "btn_button_rules"), callback_data="admin_button_rules"),
-            InlineKeyboardButton(_t(lang, "btn_scrape_menu"), callback_data="admin_scrape_menu"),
+            InlineKeyboardButton(_t(lang, "btn_link_rules"), callback_data="admin_link_rules"),
         ],
         [
+            InlineKeyboardButton(_t(lang, "btn_scrape_menu"), callback_data="admin_scrape_menu"),
             InlineKeyboardButton(_t(lang, "btn_language"), callback_data="admin_language"),
         ],
         [
@@ -830,6 +853,9 @@ async def handle_admin_menu_callback(client: Client, callback_query):
     elif data == "admin_button_rules":
         await callback_query.answer()
         await handle_button_rules(client, callback_query)
+    elif data == "admin_link_rules":
+        await callback_query.answer()
+        await handle_link_rules(client, callback_query)
     elif data == "admin_scrape_menu":
         await callback_query.answer()
         await handle_scrape_menu(client, callback_query)

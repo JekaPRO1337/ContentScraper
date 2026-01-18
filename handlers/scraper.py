@@ -1,7 +1,7 @@
 from pyrogram import Client
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from database import db
-from utils.media_handler import clone_message, clone_media_group, download_and_clone_message
+from utils.media_handler import clone_message, clone_media_group, download_and_clone_message, apply_link_rules_to_text
 import asyncio
 import os
 
@@ -420,13 +420,13 @@ async def download_and_clone_media_group(
     pair_id: int
 ):
     """Download and clone a media group"""
-    from utils.media_handler import clone_media_group
     from utils.button_replacer import replace_markup
     
     # Download all media first
     downloaded_media = []
     caption = None
     caption_entities = None
+    caption_parse_mode = None
     reply_markup = None
     
     for i, msg in enumerate(messages):
@@ -443,6 +443,9 @@ async def download_and_clone_media_group(
         if i == len(messages) - 1:
             caption = msg.caption
             caption_entities = msg.caption_entities
+            caption, caption_parse_mode = await apply_link_rules_to_text(caption)
+            if caption_parse_mode:
+                caption_entities = None
             if msg.reply_markup:
                 reply_markup = await replace_markup(msg.reply_markup)
         
@@ -461,6 +464,7 @@ async def download_and_clone_media_group(
             caption,
             caption_entities,
             reply_markup,
+            caption_parse_mode,
             sender_client=_sender_client
         )
     finally:
