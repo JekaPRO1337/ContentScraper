@@ -98,8 +98,13 @@ def _t(lang: str, key: str) -> str:
             "remove_usage": "**Использование:** `/removepair <pair_id>`",
             "remove_success": "✅ Пара каналов {pair_id} успешно удалена!",
             "remove_invalid": "❌ Некорректный ID пары. Укажите число.",
-            "addrule_usage": "**Использование:** `/addrule <pattern> <replacement>`\n\nПримеры:\n`/addrule parimatch [Наш партнёр](https://example.com)`\n`/addrule regex:parimatch\\d* [Наш партнёр](https://example.com)`",
-            "addrule_required": "❌ Шаблон и замена обязательны.",
+            "addrule_usage": "**Использование:** `/addrule <pattern> [replacement]`\n\n"
+                             "Примеры:\n"
+                             "• Удалить слово: `/addrule Париматч`\n"
+                             "• Заменить на текст: `/addrule Parimatch Мойтекст`\n"
+                             "• Заменить на гиперссылку: `/addrule Париматч [Наш партнёр](https://example.com)`\n"
+                             "• Regex для вариаций: `/addrule regex:(parimatch|париматч)\\d* [Ссылка](https://example.com)`",
+            "addrule_required": "❌ Шаблон обязателен.",
             "addrule_success": "✅ Правило добавлено!\n\n**ID правила:** {rule_id}\n**Шаблон:** `{pattern}`\n**Замена:** `{replacement}`",
             "removerule_usage": "**Использование:** `/removerule <rule_id>`",
             "removerule_success": "✅ Правило {rule_id} удалено!",
@@ -140,8 +145,9 @@ def _t(lang: str, key: str) -> str:
             "link_rules_title": "**🧮 Замена ключевых слов**\n\n",
             "link_rules_none": "Правила ещё не настроены.\n\n",
             "link_rules_commands": "**Команды:**\n"
-                                  "`/addrule <pattern> <replacement>` — добавить правило\n"
+                                  "`/addrule <pattern> [replacement]` — добавить правило\n"
                                   "`/removerule <rule_id>` — удалить правило\n\n"
+                                  "Можно создавать много правил — они применяются по очереди.\n"
                                   "Шаблон может быть обычным текстом или начинаться с `regex:` для\n"
                                   "регулярных выражений. Замена может содержать текст и ссылки,\n"
                                   "включая формат Markdown `[текст](https://example.com)`.",
@@ -1061,21 +1067,15 @@ async def add_rule_command(client: Client, message: Message):
     """Add link replacement rule"""
     lang = await _get_lang_from_message(message)
     try:
-        # Parse command: /addrule pattern replacement
-        # Handle patterns and replacements that may contain spaces
+        # Parse command: /addrule pattern [replacement]
         text = message.text
-        if not text or len(text.split()) < 3:
+        parts = text.split(maxsplit=2)
+        if len(parts) < 2:
             await message.reply_text(_t(lang, "addrule_usage"))
             return
-        
-        parts = text.split(maxsplit=2)
-        if len(parts) < 3:
-            parts = text.split()
-        
-        pattern = parts[1] if len(parts) > 1 else ""
+        pattern = parts[1]
         replacement = parts[2] if len(parts) > 2 else ""
-        
-        if not pattern or not replacement:
+        if not pattern:
             await message.reply_text(_t(lang, "addrule_required"))
             return
         
@@ -1084,7 +1084,7 @@ async def add_rule_command(client: Client, message: Message):
             _t(lang, "addrule_success").format(
                 rule_id=rule_id,
                 pattern=pattern[:100],
-                replacement=replacement[:100],
+                replacement=(replacement[:100] if replacement else ("⛔ (пусто/удаление)" if lang == "ru" else "⛔ (empty/remove)")),
             )
         )
     except Exception as e:
