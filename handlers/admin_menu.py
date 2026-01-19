@@ -296,6 +296,43 @@ async def _get_lang_from_callback(callback_query) -> str:
         pass
     return "ru"
 
+async def _pair_access_report(bot_client: Client, donor: str, target: str) -> str:
+    lang = await db.get_user_lang(ADMIN_ID or 0)
+    donor_status = "✅"
+    donor_hint = ""
+    target_status = "✅"
+    target_hint = ""
+    try:
+        resolver = _user_client or bot_client
+        ref = donor.strip().replace("−", "-").replace("–", "-").replace("—", "-")
+        chat_obj = await resolver.get_chat(int(ref) if ref.startswith("-") or ref.isdigit() else ref if ref.startswith("@") else f"@{ref}")
+        _ = chat_obj.id
+    except Exception as e:
+        donor_status = "❌"
+        donor_hint = "Пользовательская сессия не имеет доступа к донору. Подпишитесь на канал."
+    try:
+        me = await bot_client.get_me()
+        ref_t = target.strip().replace("−", "-").replace("–", "-").replace("—", "-")
+        member = await bot_client.get_chat_member(int(ref_t) if ref_t.startswith("-") or ref_t.isdigit() else ref_t if ref_t.startswith("@") else f"@{ref_t}", me.id)
+        role = str(getattr(member, "status", "")).lower()
+        if role not in {"administrator", "owner"}:
+            target_status = "❌"
+            target_hint = "Бот не администратор целевого канала."
+    except Exception as e:
+        target_status = "❌"
+        target_hint = "Бот не может получить доступ к целевому каналу."
+    report = ""
+    report += f"Доступ к донору: {donor_status}"
+    if donor_hint:
+        report += f" — {donor_hint}\n"
+    else:
+        report += "\n"
+    report += f"Доступ бота к цели: {target_status}"
+    if target_hint:
+        report += f" — {target_hint}\n\n"
+    else:
+        report += "\n\n"
+    return report
 
 def _admin_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -418,6 +455,7 @@ async def handle_scrape_pair(client: Client, callback_query, pair_id: int):
         donor=pair["donor_channel"],
         target=pair["target_channel"],
     )
+    text += await _pair_access_report(client, pair["donor_channel"], pair["target_channel"])
     text += _t(lang, "scrape_modes_help").format(n=SCRAPE_N)
     text += _t(lang, "scrape_bot_admin_note")
 
@@ -608,6 +646,10 @@ async def handle_scrape_latest(client: Client, callback_query):
     if not pair:
         await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
         return
+    report = await _pair_access_report(client, pair["donor_channel"], pair["target_channel"])
+    if "❌" in report:
+        await callback_query.answer(report, show_alert=True)
+        return
 
     worker_client = _user_client or client
     asyncio.create_task(scrape_latest_n_messages(worker_client, pair_id, n))
@@ -632,6 +674,10 @@ async def handle_scrape_first(client: Client, callback_query):
     pair = await db.get_pair_by_id(pair_id)
     if not pair:
         await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+    report = await _pair_access_report(client, pair["donor_channel"], pair["target_channel"])
+    if "❌" in report:
+        await callback_query.answer(report, show_alert=True)
         return
 
     worker_client = _user_client or client
@@ -773,6 +819,10 @@ async def handle_scrape_full(client: Client, callback_query):
     pair = await db.get_pair_by_id(pair_id)
     if not pair:
         await callback_query.answer(_t(lang, "scrape_no_pair"), show_alert=True)
+        return
+    report = await _pair_access_report(client, pair["donor_channel"], pair["target_channel"])
+    if "❌" in report:
+        await callback_query.answer(report, show_alert=True)
         return
 
     worker_client = _user_client or client
