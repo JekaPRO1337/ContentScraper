@@ -273,6 +273,25 @@ class Database:
             await db.execute('DELETE FROM link_rules WHERE id = ?', (rule_id,))
             await db.commit()
 
+    async def remove_link_rule_by_pattern(self, pattern: str):
+        """Remove link replacement rules by exact pattern (case-insensitive)"""
+        patt = (pattern or "").strip()
+        if not patt:
+            return 0
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                'DELETE FROM link_rules WHERE LOWER(pattern) = LOWER(?)',
+                (patt,)
+            )
+            await db.commit()
+            # Return count removed
+            async with db.execute(
+                'SELECT COUNT(1) FROM link_rules WHERE LOWER(pattern) = LOWER(?)',
+                (patt,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                return int(row[0]) if row and row[0] else 0
+
     async def get_all_link_rules(self):
         """Get all enabled link replacement rules"""
         async with aiosqlite.connect(self.db_path) as db:

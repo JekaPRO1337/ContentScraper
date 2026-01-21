@@ -154,7 +154,8 @@ def _t(lang: str, key: str) -> str:
             "link_rules_none": "Правила ещё не настроены.\n\n",
             "link_rules_commands": "**Команды:**\n"
                                   "`/addrule <pattern> [replacement]` — добавить правило\n"
-                                  "`/removerule <rule_id>` — удалить правило\n\n"
+                                  "`/removerule <rule_id>` — удалить правило по ID\n"
+                                  "`/removerulepat <pattern>` — удалить по шаблону\n\n"
                                   "**Примеры:**\n"
                                   "• Удаление: `/addrule Париматч`\n"
                                   "• Замена текстом: `/addrule Parimatch 1win`\n"
@@ -263,7 +264,8 @@ def _t(lang: str, key: str) -> str:
             "link_rules_none": "No rules configured yet.\n\n",
             "link_rules_commands": "**Commands:**\n"
                                   "`/addrule <pattern> [replacement]` — add rule\n"
-                                  "`/removerule <rule_id>` — remove rule\n\n"
+                                  "`/removerule <rule_id>` — remove by ID\n"
+                                  "`/removerulepat <pattern>` — remove by pattern\n\n"
                                   "**Examples:**\n"
                                   "• Delete: `/addrule Parimatch`\n"
                                   "• Replace with text: `/addrule Parimatch MyText`\n"
@@ -1178,6 +1180,23 @@ async def remove_rule_command(client: Client, message: Message):
         await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
 
 
+async def remove_rule_by_pattern_command(client: Client, message: Message):
+    """Remove link replacement rules by pattern"""
+    lang = await _get_lang_from_message(message)
+    try:
+        payload = message.text.split(maxsplit=1)
+        if len(payload) < 2 or not payload[1].strip():
+            # Reuse usage but adapt text inline for pattern removal
+            usage = _t(lang, "removerule_usage") + "\n\nПример удаления по шаблону:\n`/removerulepat Париматч`\n`/removerulepat regex:(parimatch|париматч)\\d*`"
+            await message.reply_text(usage)
+            return
+        pattern = payload[1].strip()
+        await db.remove_link_rule_by_pattern(pattern)
+        await message.reply_text(f"✅ Удалены правила с шаблоном: `{pattern}`")
+    except Exception as e:
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
 async def handle_forwarded_message(client: Client, message: Message):
     """Handle forwarded messages to resolve chat ID"""
     if message.forward_from_chat:
@@ -1219,6 +1238,7 @@ def setup_admin_handlers(client: Client):
     removepair_filter = filters.command("removepair") & filters.user(ADMIN_ID)
     addrule_filter = filters.command("addrule") & filters.user(ADMIN_ID)
     removerule_filter = filters.command("removerule") & filters.user(ADMIN_ID)
+    removerulepat_filter = filters.command("removerulepat") & filters.user(ADMIN_ID)
     addbtn1_filter = filters.command("addbtn1") & filters.user(ADMIN_ID)
     addbtn2_filter = filters.command("addbtn2") & filters.user(ADMIN_ID)
     removebtn_filter = filters.command("removebtn") & filters.user(ADMIN_ID)
@@ -1234,6 +1254,7 @@ def setup_admin_handlers(client: Client):
     client.add_handler(MessageHandler(remove_pair_command, removepair_filter))
     client.add_handler(MessageHandler(add_rule_command, addrule_filter))
     client.add_handler(MessageHandler(remove_rule_command, removerule_filter))
+    client.add_handler(MessageHandler(remove_rule_by_pattern_command, removerulepat_filter))
     client.add_handler(MessageHandler(add_button_rule_one_command, addbtn1_filter))
     client.add_handler(MessageHandler(add_button_rule_two_command, addbtn2_filter))
     client.add_handler(MessageHandler(remove_button_rule_command, removebtn_filter))

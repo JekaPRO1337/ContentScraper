@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.DS_Store
+.env
+*.session
+content_cloner.db
+content_cloner_user.session
+content_cloner_bot.session
