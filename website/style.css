@@ -269,9 +269,129 @@ h2 {
     position: relative;
 }
 
-footer {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-secondary);
-    margin: 2rem 5%;
+/* Mobile Navigation Trigger */
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.menu-toggle span {
+    width: 30px;
+    height: 2px;
+    background: var(--text-primary);
+    transition: 0.3s;
+}
+
+/* Burger Animation */
+.menu-toggle.active span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+
+.menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-toggle.active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+@media (max-width: 968px) {
+    .menu-toggle {
+        display: flex;
+    }
+
+    .navbar {
+        top: 0;
+        left: 0;
+        width: 100%;
+        transform: none;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+    }
+
+    .links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 80%;
+        height: 100vh;
+        background: #0d0d0d;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 1000;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .links.active {
+        right: 0;
+    }
+
+    .links a {
+        margin: 1.5rem 0 !important;
+        font-size: 1.5rem;
+    }
+
+    .lang-switch {
+        margin: 1.5rem 0;
+        padding: 0;
+        border: none;
+        font-size: 1.2rem;
+    }
+
+    .hero {
+        flex-direction: column;
+        padding-top: 120px;
+        text-align: center;
+        gap: 3rem;
+    }
+
+    .hero-content h1 {
+        font-size: 2.8rem;
+    }
+
+    .hero-content p {
+        margin: 0 auto 2.5rem;
+    }
+
+    .hero-btns {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .hero-visual {
+        width: 100%;
+        height: auto;
+        min-height: 250px;
+    }
+
+    .hero-visual .code-preview {
+        font-size: 0.9rem;
+    }
+
+    .step-container {
+        flex-direction: column;
+        gap: 4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+
+    .navbar {
+        padding: 1rem 5%;
+    }
+
+    .doc-container {
+        padding: 1.5rem;
+        margin: 80px 1rem;
+    }
 }

@@ -36,3 +36,23 @@ const animate = () => {
     requestAnimationFrame(animate);
 };
 animate();
+
+// Mobile Menu Toggle
+const menuToggle = document.querySelector('.menu-toggle');
+const links = document.querySelector('.links');
+
+if (menuToggle && links) {
+    menuToggle.addEventListener('click', () => {
+        menuToggle.classList.toggle('active');
+        links.classList.toggle('active');
+    });
+
+    // Close menu when clicking on a link
+    document.querySelectorAll('.links a').forEach(link => {
+        link.addEventListener('click', () => {
+            menuToggle.classList.remove('active');
+            links.classList.remove('active');
+        });
+    });
+}
+
