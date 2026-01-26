@@ -1,6 +1,7 @@
 import asyncio
 from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN, ADMIN_ID
+from keys import API_ID, API_HASH
+from config import BOT_TOKEN, ADMIN_ID
 from database import db
 from handlers.scraper import setup_scraper_handler, set_sender_client
 from handlers.admin_menu import setup_admin_handlers, send_admin_menu, set_user_client
@@ -18,7 +19,7 @@ async def main():
     await db.init_db()
     print("Database initialized!")
     
-    # Create Pyrogram client - use user session for reading channels without admin rights
+    # Create pyrogram client - use user session for reading channels without admin rights
     # Bot token is optional and only used for admin commands
     session_name = "content_cloner_user"
     

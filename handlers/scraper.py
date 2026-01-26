@@ -54,8 +54,36 @@ async def _resolve_chat(client: Client, donor_channel: str):
         raise
 
 
-# Track last processed message IDs per channel
+# Track last processed message ids per channel
 last_message_ids = {}
+
+
+async def _ensure_bot_access_to_target(bot_client: Client, user_client: Client, target_ref: str):
+    """
+    Ensure the bot can access the target channel.
+    If bot.get_chat(id) fails, use user_client to find the username,
+    then bot.get_chat(username) to warm up the cache.
+    """
+    if not bot_client:
+        return
+
+    try:
+        # Try direct access first
+        await bot_client.get_chat(target_ref)
+    except Exception:
+        # If it fails, try to resolve via user
+        try:
+            print(f"Bot failed to resolve {target_ref}. Trying via User...")
+            user_side_chat = await user_client.get_chat(target_ref)
+            if user_side_chat.username:
+                print(f"Resolved {target_ref} to @{user_side_chat.username}. Teaching Bot...")
+                await bot_client.get_chat(user_side_chat.username)
+                print(f"Bot successfully cached {target_ref}")
+            else:
+                print(f"⚠️ Channel {target_ref} has no username. Bot cannot resolve it by ID without interaction.")
+        except Exception as e:
+            print(f"Failed to resolve {target_ref} via User: {e}")
+
 
 
 def clear_memory_cache(channel_id: str):
@@ -190,6 +218,11 @@ async def scrape_latest_n_messages(client: Client, pair_id: int, limit: int):
         return
     donor_channel = pair["donor_channel"]
     target_channel = pair["target_channel"]
+
+    # Ensure bot can see the target channel
+    if _sender_client:
+        await _ensure_bot_access_to_target(_sender_client, client, target_channel)
+
     try:
         chat = await _resolve_chat(client, donor_channel)
     except Exception as e:
@@ -265,6 +298,10 @@ async def scrape_full_history(client: Client, pair_id: int):
         return
     donor_channel = pair["donor_channel"]
     target_channel = pair["target_channel"]
+
+    # Ensure bot can see the target channel
+    if _sender_client:
+        await _ensure_bot_access_to_target(_sender_client, client, target_channel)
     try:
         chat = await _resolve_chat(client, donor_channel)
     except Exception as e:
@@ -345,6 +382,10 @@ async def scrape_first_n_messages(client: Client, pair_id: int, limit: int):
         return
     donor_channel = pair["donor_channel"]
     target_channel = pair["target_channel"]
+    
+    # Ensure bot can see the target channel
+    if _sender_client:
+        await _ensure_bot_access_to_target(_sender_client, client, target_channel)
     try:
         chat = await _resolve_chat(client, donor_channel)
     except Exception as e:
@@ -491,6 +532,11 @@ async def start_monitoring(client: Client):
             for pair in pairs:
                 if not pair.get('realtime_enabled'):
                     continue
+                
+                # Ensure bot can see the target channel
+                if _sender_client:
+                    await _ensure_bot_access_to_target(_sender_client, client, pair['target_channel'])
+
                 task = monitor_channel(
                     client,
                     pair['donor_channel'],

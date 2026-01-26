@@ -304,25 +304,60 @@ async def _pair_access_report(bot_client: Client, donor: str, target: str) -> st
     donor_hint = ""
     target_status = "✅"
     target_hint = ""
+    
+    # helper to normalize input
+    def normalize(ref: str):
+        s = ref.strip().replace("−", "-").replace("–", "-").replace("—", "-")
+        if s.startswith("-") or s.isdigit():
+            return int(s)
+        if s.startswith("@"):
+            return s
+        return f"@{s}"
+
+    # 1. Check Donor Access (User side)
     try:
         resolver = _user_client or bot_client
-        ref = donor.strip().replace("−", "-").replace("–", "-").replace("—", "-")
-        chat_obj = await resolver.get_chat(int(ref) if ref.startswith("-") or ref.isdigit() else ref if ref.startswith("@") else f"@{ref}")
+        chat_obj = await resolver.get_chat(normalize(donor))
         _ = chat_obj.id
     except Exception as e:
         donor_status = "❌"
         donor_hint = "Пользовательская сессия не имеет доступа к донору. Подпишитесь на канал."
+
+    # 2. Check Target Access (Bot side)
     try:
         me = await bot_client.get_me()
-        ref_t = target.strip().replace("−", "-").replace("–", "-").replace("—", "-")
-        member = await bot_client.get_chat_member(int(ref_t) if ref_t.startswith("-") or ref_t.isdigit() else ref_t if ref_t.startswith("@") else f"@{ref_t}", me.id)
+        target_ref = normalize(target)
+        
+        # Try direct access first
+        try:
+            target_chat = await bot_client.get_chat(target_ref)
+        except Exception:
+            # If bot fails and we have a user client, try to resolve via user
+            if _user_client:
+                try:
+                    # User resolves by ID
+                    user_side_chat = await _user_client.get_chat(target_ref)
+                    if user_side_chat.username:
+                        # Bot resolves by username -> caches access hash
+                        target_chat = await bot_client.get_chat(user_side_chat.username)
+                    else:
+                        raise Exception("Channel has no username")
+                except Exception:
+                    raise # Re-raise original or new failure
+            else:
+                raise
+
+        # Check admin rights
+        member = await bot_client.get_chat_member(target_chat.id, me.id)
         role = str(getattr(member, "status", "")).lower()
         if role not in {"administrator", "owner"}:
             target_status = "❌"
             target_hint = "Бот не администратор целевого канала."
+            
     except Exception as e:
         target_status = "❌"
-        target_hint = "Бот не может получить доступ к целевому каналу."
+        target_hint = "Бот не может получить доступ к целевому каналу (PEER_INVALID)."
+
     report = ""
     report += f"Доступ к донору: {donor_status}"
     if donor_hint:
