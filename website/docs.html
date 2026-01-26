@@ -1,32 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Documentation | Content Scraper</title>
+    <title>Документация | Content Scraper</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         .doc-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 100px auto;
-            padding: 2rem;
+            padding: 3rem;
         }
 
         .doc-section {
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .doc-section h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
         }
 
         .doc-section h2 {
             text-align: left;
             margin-bottom: 1.5rem;
             color: var(--accent-blue);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
         }
 
         .doc-section h3 {
-            margin-top: 1.5rem;
+            margin-top: 2rem;
             margin-bottom: 1rem;
             color: var(--text-primary);
         }
@@ -34,34 +41,52 @@
         .doc-section p,
         .doc-section li {
             color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 1rem;
+            line-height: 1.8;
+            margin-bottom: 1.2rem;
         }
 
         .doc-section ul {
             padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .doc-section li {
+            margin-bottom: 0.5rem;
         }
 
         code {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.2rem 0.4rem;
+            background: rgba(139, 92, 246, 0.2);
+            padding: 0.2rem 0.5rem;
             border-radius: 4px;
-            color: var(--accent-purple);
+            color: #d8b4fe;
             font-family: monospace;
         }
 
         pre {
             background: #000;
-            padding: 1rem;
-            border-radius: 8px;
+            padding: 1.5rem;
+            border-radius: 12px;
             overflow-x: auto;
-            margin-bottom: 1rem;
+            margin: 1.5rem 0;
+            border: 1px solid var(--glass-border);
         }
 
         pre code {
             color: #ccc;
             background: none;
             padding: 0;
+        }
+
+        .warning-box {
+            background: rgba(251, 146, 60, 0.1);
+            border-left: 4px solid #fb923c;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box strong {
+            color: #fb923c;
         }
     </style>
 </head>
@@ -72,51 +97,118 @@
     <nav class="navbar glass">
         <div class="logo">Content<span>Scraper</span></div>
         <div class="links">
-            <a href="index.html">Home</a>
-            <a href="docs.html" style="color: var(--text-primary);">Documentation</a>
-            <a href="content-scraper-premium.zip" class="cta-small" download>Download</a>
+            <a href="index.html">Главная</a>
+            <a href="docs.html" style="color: var(--text-primary);">Документация</a>
+            <a href="pricing.html">Цены</a>
+            <a href="contact.html">Контакты</a>
+            <div class="lang-switch">
+                <span class="active">RU</span> | <a href="/en/docs.html">EN</a>
+            </div>
+            <a href="content-scraper-premium.zip" class="cta-small" download>Скачать</a>
         </div>
     </nav>
 
     <main class="doc-container glass">
         <section class="doc-section">
-            <h1>Documentation</h1>
-            <p>Welcome to the official documentation for Content Scraper Premium.</p>
+            <h1>Полное руководство</h1>
+            <p>Добро пожаловать в подробную документацию Content Scraper Premium. Этот инструмент предназначен для
+                профессионального управления контентом и автоматизации клонирования между Telegram-каналами.</p>
         </section>
 
         <section class="doc-section">
-            <h2>1. Quick Start</h2>
-            <h3>Installation</h3>
-            <p>1. Download and extract the archive.</p>
-            <p>2. Double-click <code>install.bat</code> to set up the environment.</p>
-
-            <h3>Setting Up Keys</h3>
-            <p>Open <code>keys.py</code> and enter your Telegram API credentials obtained from my.telegram.org:</p>
-            <pre><code>API_ID = 12345678
-API_HASH = 'your_hash_here'</code></pre>
-        </section>
-
-        <section class="doc-section">
-            <h2>2. Configuration</h2>
-            <p>Rename <code>.env.example</code> to <code>.env</code> and configure your Bot Token:</p>
-            <pre><code>BOT_TOKEN=123456:ABC-DEF...
-ADMIN_ID=123456789</code></pre>
-        </section>
-
-        <section class="doc-section">
-            <h2>3. Admin Commands</h2>
+            <h2>1. Быстрый старт</h2>
+            <h3>Системные требования</h3>
             <ul>
-                <li><code>/start</code> - Open Admin Panel</li>
-                <li><code>/addpair</code> - Add a new channel pair (Donor -> Target)</li>
-                <li><code>/list</code> - View all active pairs</li>
+                <li>Windows 10/11 или Linux Server (Ubuntu 20.04+).</li>
+                <li>Python версии 3.10 или выше.</li>
+                <li>Стабильное интернет-соединение.</li>
+            </ul>
+
+            <h3>Установка</h3>
+            <p>1. Скачайте архив <code>content-scraper-premium.zip</code>.</p>
+            <p>2. Распакуйте его в отдельную папку.</p>
+            <p>3. Запустите <code>install.bat</code> — это автоматически создаст виртуальное окружение и установит все
+                нужные библиотеки.</p>
+        </section>
+
+        <section class="doc-section">
+            <h2>2. Настройка ключей доступа</h2>
+            <p>Для работы скрипта нужны ваши личные API ключи Telegram. Это безопасно — они хранятся только у вас.</p>
+
+            <h3>Получение API_ID и API_HASH</h3>
+            <ul>
+                <li>Перейдите на <a href="https://my.telegram.org/apps" target="_blank"
+                        style="color: var(--accent-blue);">my.telegram.org</a>.</li>
+                <li>Авторизуйтесь и создайте новое приложение (любое название).</li>
+                <li>Скопируйте <code>App api_id</code> и <code>App api_hash</code>.</li>
+                <li>Откройте файл <code>keys.py</code> и вставьте их туда.</li>
+            </ul>
+
+            <h3>Создание Бота</h3>
+            <ul>
+                <li>Напишите @BotFather в Telegram.</li>
+                <li>Создайте нового бота и получите <code>API Token</code>.</li>
+                <li>Откройте файл <code>.env</code> и вставьте токен в поле <code>BOT_TOKEN</code>.</li>
+                <li>В поле <code>ADMIN_ID</code> впишите ваш личный ID (его можно узнать у @userinfobot).</li>
             </ul>
         </section>
 
-        <a href="index.html" class="btn-secondary">Back to Home</a>
+        <section class="doc-section">
+            <h2>3. Как работать с Админ-панелью</h2>
+            <p>После запуска скрипта (<code>python main.py</code>), напишите вашему боту <code>/start</code>. Откроется
+                интерактивное меню.</p>
+
+            <h3>Добавление пар каналов</h3>
+            <p>Нажмите "➕ Добавить пару". Бот попросит ввести ID донора и ID цели.</p>
+            <ul>
+                <li><strong>Донор (Donor):</strong> Канал, откуда мы берем контент. Вы должны быть подписаны на него
+                    своим основным аккаунтом.</li>
+                <li><strong>Цель (Target):</strong> Канал, куда мы постим. Бот должен быть назначен в нем
+                    <strong>Администратором</strong>.</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>Важно:</strong> Если вы используете ID каналов (начинаются на -100...), убедитесь, что бот
+                "знает" эти каналы. Чаще всего достаточно просто добавить бота в админы цели.
+            </div>
+        </section>
+
+        <section class="doc-section">
+            <h2>4. Продвинутые функции</h2>
+            <h3>Удаление и замена текста (Regex)</h3>
+            <p>Вы можете настроить правила замены ссылок или слов. В админ-панели выберите пару и нажмите "⚙️ Настройки
+                текста".</p>
+            <p>Пример: чтобы удалить все упоминания конкурента, добавьте правило: <code>regex:.*конкурент.*</code> ->
+                замена на <code>[Ваш Бренд]</code>.</p>
+
+            <h3>Решение проблемы PEER_ID_INVALID</h3>
+            <p>Иногда бот не видит целевой канал по его ID. В нашем скрипте реализована система "обучения":</p>
+            <ol>
+                <li>Скрипт использует ваш User-аккаунт, чтобы найти канал.</li>
+                <li>Затем он передает данные Боту по юзернейму (например, @mychannel).</li>
+                <li>Бот успешно кэширует канал и ошибка пропадает навсегда.</li>
+            </ol>
+        </section>
+
+        <section class="doc-section">
+            <h2>5. Часто задаваемые вопросы (FAQ)</h2>
+            <h3>Нужен ли VPN?</h3>
+            <p>Если в вашем регионе Telegram не заблокирован напрямую — нет. Если же вы запускаете бота из РФ без
+                прокси, могут быть задержки.</p>
+
+            <h3>Сколько каналов можно добавить?</h3>
+            <p>В Премиум версии ограничений нет, но мы рекомендуем до 20-30 активных пар на один аккаунт, чтобы избежать
+                Flood Wait от Telegram.</p>
+        </section>
+
+        <div style="display: flex; gap: 1rem;">
+            <a href="index.html" class="btn-primary">На главную</a>
+            <a href="pricing.html" class="btn-secondary">Купить Премиум</a>
+        </div>
     </main>
 
     <footer class="glass">
-        <p>&copy; 2026 Content Scraper. All rights reserved.</p>
+        <p>&copy; 2026 Content Scraper. Все права защищены.</p>
     </footer>
 </body>
 
