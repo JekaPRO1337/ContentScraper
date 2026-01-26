@@ -315,18 +315,21 @@ h2 {
     }
 
     .links {
+        display: flex;
         position: fixed;
         top: 0;
         right: -100%;
-        width: 80%;
+        width: 100%;
+        /* Cover full width for better experience */
         height: 100vh;
-        background: #0d0d0d;
+        background: rgba(10, 10, 10, 0.98);
+        /* Deep dark background */
         flex-direction: column;
         justify-content: center;
         align-items: center;
         transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         z-index: 1000;
-        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(20px);
     }
 
     .links.active {
@@ -335,14 +338,18 @@ h2 {
 
     .links a {
         margin: 1.5rem 0 !important;
-        font-size: 1.5rem;
+        padding: 0;
+        font-size: 1.8rem;
+        text-align: center;
     }
 
     .lang-switch {
         margin: 1.5rem 0;
         padding: 0;
         border: none;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
+        display: flex;
+        gap: 1rem;
     }
 
     .hero {
