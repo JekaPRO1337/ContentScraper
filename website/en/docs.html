@@ -199,7 +199,27 @@
         </section>
 
         <section class="doc-section">
-            <h2>5. FAQ</h2>
+            <h2>5. Channel ID Sniffer (Find IDs)</h2>
+            <p>It can often be difficult to find the ID of a private channel or a channel you just subscribed to. For
+                this, we created the <strong>Sniffer Tool</strong>.</p>
+
+            <h3>How to Start</h3>
+            <ol>
+                <li>Run <code>python main.py</code>.</li>
+                <li>In the menu that appears, select option <code>2</code> (Channel ID Sniffer).</li>
+                <li>The script will start listening to all incoming messages on your account.</li>
+            </ol>
+
+            <h3>Viewing Results</h3>
+            <p>As soon as messages appear in the desired channels, the sniffer will capture their IDs. You can see the
+                results in real-time in the console or open the file:</p>
+            <code>sniffer_log.html</code>
+            <p>This is a beautiful HTML report where you can simply click on an ID to copy it to your clipboard for
+                further addition to the scraper.</p>
+        </section>
+
+        <section class="doc-section">
+            <h2>6. FAQ</h2>
             <h3>Do I need a VPN?</h3>
             <p>If Telegram is not directly blocked in your region, no. If you run the bot from a restricted region
                 without a proxy, there may be delays.</p>

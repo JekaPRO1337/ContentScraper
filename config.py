@@ -13,6 +13,9 @@ BOT_TOKEN = os.getenv('BOT_TOKEN', '0')
 # Admin User ID (from .env)
 ADMIN_ID = int(os.getenv('ADMIN_ID', '0'))
 
+# Sniffer License (Yearly VIP only)
+SNIFFER_LICENSE = os.getenv('SNIFFER_LICENSE', '')
+
 # Database
 DATABASE_PATH = 'content_cloner.db'
 

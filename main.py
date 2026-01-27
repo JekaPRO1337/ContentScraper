@@ -18,6 +18,32 @@ async def main():
     print("Initializing database...")
     await db.init_db()
     print("Database initialized!")
+
+    # Mode Selection
+    print("\n" + "="*30)
+    print("ВЫБЕРИТЕ РЕЖИМ РАБОТЫ:")
+    print("1. Запустить Бот-Скрапер (основной)")
+    print("2. Запустить Channel ID Sniffer (поиск ID)")
+    print("="*30)
+    
+    choice = input("Введите 1 или 2: ").strip()
+    
+    if choice == "2":
+        from config import SNIFFER_LICENSE
+        if SNIFFER_LICENSE != "VIP_YEARLY_2026":
+            print("\n" + "!"*50)
+            print("🛑 ДОСТУП ОГРАНИЧЕН")
+            print("Sniffer ID Tool доступен только для пользователей с ПОЖИЗНЕННОЙ или ГОДОВОЙ VIP подпиской.")
+            print("Для получения доступа напишите администратору: @admin")
+            print("!"*50 + "\n")
+            return
+            
+        from sniffer import start_sniffer
+        session_name = "content_cloner_user"
+        user_client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
+        async with user_client:
+            await start_sniffer(user_client)
+        return
     
     # Create pyrogram client - use user session for reading channels without admin rights
     # Bot token is optional and only used for admin commands
