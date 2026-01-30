@@ -31,6 +31,7 @@ async def main():
         from config import SNIFFER_LICENSE
         from utils.license_check import verify_license
         
+        # print(f"DEBUG: License loaded: [{SNIFFER_LICENSE}]") # Only for developer
         if not verify_license(SNIFFER_LICENSE):
             print("\n" + "!"*50)
             print("🛑 ДОСТУП ОГРАНИЧЕН")

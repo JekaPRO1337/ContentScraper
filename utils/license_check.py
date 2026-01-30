@@ -20,6 +20,13 @@ def verify_license(key: str) -> bool:
     if not key:
         return False
     
-    # Generate SHA-256 hash of the provided key
-    h = hashlib.sha256(key.strip().encode()).hexdigest()
+    # Clean up the key (remove quotes and whitespace)
+    clean_key = key.strip("'\" ").upper()
+    
+    # Generate SHA-256 hash
+    h = hashlib.sha256(clean_key.encode()).hexdigest()
+    
+    # For debugging (uncomment to see current hash)
+    # print(f"DEBUG: Input key '{clean_key}' -> Hash: {h}")
+    
     return h in VALID_KEY_HASHES
