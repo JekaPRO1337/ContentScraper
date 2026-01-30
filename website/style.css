@@ -276,18 +276,6 @@ body {
     transform: translateY(-2px);
 }
 
-.hero-visual {
-    width: 500px;
-    height: 350px;
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: monospace;
-    font-size: 1.1rem;
-    position: relative;
-    overflow: hidden;
-}
 
 .code-preview .line {
     margin-bottom: 0.5rem;
