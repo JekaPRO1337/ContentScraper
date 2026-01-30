@@ -1,7 +1,6 @@
 import asyncio
 from pyrogram import Client
-from keys import API_ID, API_HASH
-from config import BOT_TOKEN, ADMIN_ID
+from config import BOT_TOKEN, ADMIN_ID, API_ID, API_HASH
 from database import db
 from handlers.scraper import setup_scraper_handler, set_sender_client
 from handlers.admin_menu import setup_admin_handlers, send_admin_menu, set_user_client
@@ -30,7 +29,9 @@ async def main():
     
     if choice == "2":
         from config import SNIFFER_LICENSE
-        if SNIFFER_LICENSE != "VIP_YEARLY_2026":
+        from utils.license_check import verify_license
+        
+        if not verify_license(SNIFFER_LICENSE):
             print("\n" + "!"*50)
             print("🛑 ДОСТУП ОГРАНИЧЕН")
             print("Sniffer ID Tool доступен только для пользователей с ПОЖИЗНЕННОЙ или ГОДОВОЙ VIP подпиской.")

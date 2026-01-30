@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
 
-# Telegram API Credentials (now in keys.py)
+# Telegram API Credentials (from .env)
+API_ID = os.getenv('API_ID', '0')
+API_HASH = os.getenv('API_HASH', '')
 
 # Bot Token (from .env)
 BOT_TOKEN = os.getenv('BOT_TOKEN', '0')

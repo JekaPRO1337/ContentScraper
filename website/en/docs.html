@@ -132,7 +132,10 @@
             <h3>Installation</h3>
             <p>1. Download the <code>content-scraper-premium.zip</code> archive.</p>
             <p>2. Extract it into a separate folder.</p>
-            <p>3. Run <code>install.bat</code> — this will automatically create a virtual environment and install all
+            <p>3. **Open Terminal**: To open a terminal in the folder, **right-click** on an empty space and select
+                <code>Open in Terminal</code> (or <code>Shift + Right-click</code> ->
+                <code>Open PowerShell window here</code>).</p>
+            <p>4. Run <code>install.bat</code> — this will automatically create a virtual environment and install all
                 necessary libraries.</p>
         </section>
 
@@ -147,7 +150,8 @@
                         style="color: var(--accent-blue);">my.telegram.org</a>.</li>
                 <li>Log in and create a new application (any name).</li>
                 <li>Copy <code>App api_id</code> and <code>App api_hash</code>.</li>
-                <li>Open <code>keys.py</code> and paste them there.</li>
+                <li>Open the <code>.env</code> file and paste them into the corresponding fields.</li>
+                <li><strong>Important:</strong> Quotes are optional in the <code>.env</code> file.</li>
             </ul>
 
             <h3>Creating a Bot</h3>

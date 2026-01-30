@@ -2,7 +2,7 @@ import os
 import asyncio
 from datetime import datetime
 from pyrogram import Client, filters, errors
-from keys import API_ID, API_HASH
+from config import API_ID, API_HASH
 
 # HTML Template and Styles
 HTML_TEMPLATE = """

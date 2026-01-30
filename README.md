@@ -36,6 +36,7 @@ pip install -r requirements.txt
 1. Go to [my.telegram.org](https://my.telegram.org)
 2. Create a new application
 3. Open `keys.py` and paste your `API_ID` and `API_HASH`.
+   * **IMPORTANT**: Wrap both values in quotes, for example: `API_ID = '123456'` and `API_HASH = 'abcde123'`.
 
 **Step B: Bot Token**
 
@@ -43,17 +44,21 @@ pip install -r requirements.txt
 2. Create a new bot and get the Token
 3. Open `.env` and paste your `BOT_TOKEN`.
 4. Get your own Telegram ID (via @userinfobot) and paste it as `ADMIN_ID` in `.env`.
+5. *(Optional)* Если у вас есть годовая VIP подписка, добавьте ваш персональный ключ в `.env`: `SNIFFER_LICENSE=SNIF-XXXX-XXXX-XXXX`.
 
 ### 3. Usage
 
-Run the bot:
+Run the entry point:
 
 ```cmd
 python main.py
 ```
 
-1. **Login**: On first run, it will ask for your Phone Number (for the User Session). This is needed to read messages from donor channels.
-2. **Setup**:
+1. **Choose Mode**:
+   * **[1] Bot Scraper**: Main mode for cloning content.
+   * **[2] ID Sniffer**: Restricted mode for finding channel IDs (requires License).
+2. **Login**: On first run of either mode, it will ask for your Phone Number (for the User Session). This is needed to read messages from donor channels.
+3. **Setup**:
    * The Bot will send you an Admin Panel in PM.
    * Use **"➕ Add Channel Pair"** to configure scraping.
    * *(Important)*: Add the Bot as **Admin** in your Target Channel.
