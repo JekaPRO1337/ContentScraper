@@ -173,13 +173,15 @@ body {
 }
 
 .hero-visual-overlay {
-    position: absolute;
-    bottom: -20px;
-    right: -20px;
+    margin-top: -40px;
+    /* Pull it slightly up but keep it below the main focal point */
     padding: 1.5rem;
     font-family: monospace;
     font-size: 0.9rem;
-    min-width: 250px;
+    min-width: 300px;
+    z-index: 5;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .hero h1 {
