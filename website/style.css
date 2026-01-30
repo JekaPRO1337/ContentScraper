@@ -170,11 +170,11 @@ body {
 
 /* Hero */
 .hero {
-    min-height: 90vh;
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 120px 5% 60px;
+    padding: 160px 5% 80px;
     gap: 4rem;
     position: relative;
     overflow: hidden;
