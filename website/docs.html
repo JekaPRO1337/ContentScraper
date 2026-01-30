@@ -134,7 +134,8 @@
             <p>2. Распакуйте его в отдельную папку.</p>
             <p>3. **Запуск терминала**: Чтобы открыть терминал в папке, нажмите на пустое место **правой кнопкой мыши**
                 и выберите <code>Открыть в терминале</code> (или <code>Shift + ПКМ</code> ->
-                <code>Открыть окно PowerShell здесь</code>).</p>
+                <code>Открыть окно PowerShell здесь</code>).
+            </p>
             <p>4. Запустите <code>install.bat</code> — это автоматически создаст виртуальное окружение и установит все
                 нужные библиотеки.</p>
         </section>
@@ -149,16 +150,17 @@
                         style="color: var(--accent-blue);">my.telegram.org</a>.</li>
                 <li>Авторизуйтесь и создайте новое приложение (любое название).</li>
                 <li>Скопируйте <code>App api_id</code> и <code>App api_hash</code>.</li>
-                <li>Откройте файл <code>.env</code> и вставьте их туда в соответствующие поля.</li>
-                <li><strong>Важно:</strong> В файле <code>.env</code> кавычки не обязательны, но можно использовать
-                    одинарные.</li>
+                <li>Откройте файл <code>config.py</code> (через любой текстовый редактор, например Блокнот).</li>
+                <li>Вставьте значения в поля <code>API_ID</code> и <code>API_HASH</code>.</li>
+                <li><strong>Важно:</strong> Все значения должны быть в <strong>одинарных кавычках</strong>, например
+                    '12345678'.</li>
             </ul>
 
             <h3>Создание Бота</h3>
             <ul>
                 <li>Напишите @BotFather в Telegram.</li>
                 <li>Создайте нового бота и получите <code>API Token</code>.</li>
-                <li>Откройте файл <code>.env</code> и вставьте токен в поле <code>BOT_TOKEN</code>.</li>
+                <li>Откройте файл <code>config.py</code> и вставьте токен в поле <code>BOT_TOKEN</code>.</li>
                 <li>В поле <code>ADMIN_ID</code> впишите ваш личный ID (его можно узнать у @userinfobot).</li>
             </ul>
         </section>

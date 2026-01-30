@@ -1,5 +1,5 @@
 import asyncio
-from pyrogram import Client
+from pyrogram import Client, errors
 from config import BOT_TOKEN, ADMIN_ID, API_ID, API_HASH
 from database import db
 from handlers.scraper import setup_scraper_handler, set_sender_client
@@ -9,14 +9,19 @@ import os
 
 async def main():
     """Main function to start the bot"""
-    # Validate configuration
-    if ADMIN_ID == 0:
-        print("WARNING: ADMIN_ID not set. Admin commands will not work.")
-    
     # Initialize database
     print("Initializing database...")
     await db.init_db()
     print("Database initialized!")
+
+    # Validate mandatory Telegram API credentials
+    if API_ID == 0 or not API_HASH:
+        print("\n" + "!"*50)
+        print("❌ КРИТИЧЕСКАЯ ОШИБКА: API_ID или API_HASH не настроены!")
+        print("Пожалуйста, откройте файл config.py и введите ваши данные.")
+        print("Получить их можно на сайте https://my.telegram.org/apps")
+        print("!"*50 + "\n")
+        return
 
     # Mode Selection
     print("\n" + "="*30)
@@ -77,11 +82,19 @@ async def main():
     
     # Start user client (for reading channels)
     print("Starting user client...")
-    await user_client.start()
+    try:
+        await user_client.start()
+    except errors.ApiIdInvalid:
+        print("\n❌ ОШИБКА: Указанный API_ID или API_HASH недействительны.")
+        print("Проверьте правильность данных в файле config.py")
+        return
+    except Exception as e:
+        print(f"\n❌ Ошибка при запуске сессии: {e}")
+        return
     
     user_info = await user_client.get_me()
-    print(f"User client started: {user_info.first_name} (@{user_info.username or 'no username'})")
-    print(f"User ID: {user_info.id}")
+    print(f"✅ User client запущен: {user_info.first_name} (@{user_info.username or 'нет имени'})")
+    print(f"ID пользователя: {user_info.id}")
     
     # Start bot client if available (for admin commands)
     if bot_client:

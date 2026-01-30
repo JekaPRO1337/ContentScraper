@@ -1,28 +1,38 @@
-import os
-from dotenv import load_dotenv
+# --- ContentScraper Configuration ---
+# Все настройки находятся здесь.
+# ВАЖНО: Все значения должны быть в ОДИНАРНЫХ кавычках ('...').
 
-# Force loading .env from the same directory as config.py
-env_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(env_path)
+# --- Telegram API Settings ---
+# Получить можно здесь: https://my.telegram.org/apps
+# Введите полученные api_id и api_hash ниже.
+_api_id_str = '12345678'  # Ваш App api_id
+API_HASH = 'abcdef1234567890abcdef1234567890'
 
-# Telegram API Credentials (from .env)
-_api_id = os.getenv('API_ID', '0')
-API_ID = int(_api_id) if _api_id.isdigit() else 0
-API_HASH = os.getenv('API_HASH', '').strip("'\" ")
+# --- Bot Settings ---
+# Токен вашего бота от @BotFather
+BOT_TOKEN = '1234567890:AAH5RfuBAl852cn5ZFxSGG8hWu2tITnOfVE'
 
-# Bot Token (from .env)
-BOT_TOKEN = os.getenv('BOT_TOKEN', '0').strip("'\" ")
+# Ваш Telegram ID (узнать можно у @userinfobot)
+_admin_id_str = '123456789'
 
-# Admin User ID (from .env)
-_admin_id = os.getenv('ADMIN_ID', '0')
-ADMIN_ID = int(_admin_id) if _admin_id.isdigit() else 0
+# --- Licenses ---
+# Вставьте сюда ваш лицензионный ключ для активации Сниффера (Mode 2)
+# Пустой ключ '' означает ограниченный режим.
+SNIFFER_LICENSE = ''
 
-# Sniffer License (Yearly VIP only)
-SNIFFER_LICENSE = os.getenv('SNIFFER_LICENSE', '').strip("'\" ")
-
-# Database
+# --- Advanced Settings ---
 DATABASE_PATH = 'content_cloner.db'
-
-# FloodWait settings
 FLOODWAIT_RETRY_DELAY = 1
 MAX_FLOODWAIT_RETRIES = 5
+
+# --- System Logic (Не трогать) ---
+# Автоматическая конвертация строк в числа для работы программы
+try:
+    API_ID = int(_api_id_str)
+except ValueError:
+    API_ID = 0
+
+try:
+    ADMIN_ID = int(_admin_id_str)
+except ValueError:
+    ADMIN_ID = 0
