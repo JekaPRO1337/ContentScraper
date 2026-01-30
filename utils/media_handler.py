@@ -3,6 +3,12 @@ from pyrogram import Client
 from pyrogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
 from utils.button_replacer import replace_markup
 from config import FLOODWAIT_RETRY_DELAY, MAX_FLOODWAIT_RETRIES
+try:
+    MAX_FLOODWAIT_RETRIES = int(MAX_FLOODWAIT_RETRIES)
+    FLOODWAIT_RETRY_DELAY = int(FLOODWAIT_RETRY_DELAY)
+except:
+    MAX_FLOODWAIT_RETRIES = 5
+    FLOODWAIT_RETRY_DELAY = 1
 from database import db
 import asyncio
 import re

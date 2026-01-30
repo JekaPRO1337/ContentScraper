@@ -232,7 +232,12 @@ async def start_sniffer(client: Client):
 
 if __name__ == "__main__":
     # For standalone testing if needed
-    app = Client("content_cloner_user", api_id=API_ID, api_hash=API_HASH)
+    try:
+        current_api_id = int(API_ID)
+    except:
+        current_api_id = 0
+        
+    app = Client("content_cloner_user", api_id=current_api_id, api_hash=API_HASH)
     
     async def run():
         async with app:

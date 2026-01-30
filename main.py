@@ -15,7 +15,12 @@ async def main():
     print("Database initialized!")
 
     # Validate mandatory Telegram API credentials
-    if API_ID == 0 or not API_HASH:
+    try:
+        current_api_id = int(API_ID) if str(API_ID).isdigit() else 0
+    except:
+        current_api_id = 0
+
+    if current_api_id == 0 or not API_HASH:
         print("\n" + "!"*50)
         print("❌ КРИТИЧЕСКАЯ ОШИБКА: API_ID или API_HASH не настроены!")
         print("Пожалуйста, откройте файл config.py и введите ваши данные.")
@@ -36,7 +41,6 @@ async def main():
         from config import SNIFFER_LICENSE
         from utils.license_check import verify_license
         
-        # print(f"DEBUG: License loaded: [{SNIFFER_LICENSE}]") # Only for developer
         if not verify_license(SNIFFER_LICENSE):
             print("\n" + "!"*50)
             print("🛑 ДОСТУП ОГРАНИЧЕН")
@@ -47,13 +51,12 @@ async def main():
             
         from sniffer import start_sniffer
         session_name = "content_cloner_user"
-        user_client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
+        user_client = Client(session_name, api_id=current_api_id, api_hash=API_HASH)
         async with user_client:
             await start_sniffer(user_client)
         return
     
     # Create pyrogram client - use user session for reading channels without admin rights
-    # Bot token is optional and only used for admin commands
     session_name = "content_cloner_user"
     
     # Check if session file exists
@@ -66,7 +69,7 @@ async def main():
     # Create user client (for reading channels)
     user_client = Client(
         session_name,
-        api_id=API_ID,
+        api_id=current_api_id,
         api_hash=API_HASH
     )
     
@@ -75,7 +78,7 @@ async def main():
     if BOT_TOKEN:
         bot_client = Client(
             "content_cloner_bot",
-            api_id=API_ID,
+            api_id=current_api_id,
             api_hash=API_HASH,
             bot_token=BOT_TOKEN
         )
@@ -110,14 +113,14 @@ async def main():
         setup_admin_handlers(bot_client)
         set_sender_client(bot_client)
         
-        if ADMIN_ID:
-            try:
-                await send_admin_menu(bot_client, ADMIN_ID, user_id=ADMIN_ID)
-            except:
-                print("Could not send startup message to admin.")
+        try:
+            current_admin_id = int(ADMIN_ID)
+            await send_admin_menu(bot_client, current_admin_id, user_id=current_admin_id)
+        except:
+            print("WARNING: ADMIN_ID is not a valid number or not set. Admin menu not sent to admin account.")
     else:
         print("⚠️  Bot token not set. Admin commands will not work.")
-        print("   Set BOT_TOKEN in .env file to enable admin panel.")
+        print("   Set BOT_TOKEN in config.py file to enable admin panel.")
     
     # Setup scraper on user client (for reading channels)
     print("Setting up scraper...")
