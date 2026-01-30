@@ -23,6 +23,65 @@ body {
     overflow-x: hidden;
 }
 
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 140px;
+    }
+
+    .hero-content {
+        max-width: 100%;
+    }
+
+    .hero-visual {
+        width: 100%;
+    }
+
+    .hero p {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 1rem 5%;
+    }
+
+    .links {
+        display: none;
+        /* In a real project, we would add a hamburger menu toggle */
+    }
+
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .step-container {
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .hero-main-img {
+        max-width: 300px;
+    }
+
+    .code-preview {
+        font-size: 0.8rem;
+        padding: 1rem;
+    }
+}
+
 .bg-glow {
     position: fixed;
     top: -50%;
@@ -111,16 +170,65 @@ body {
 
 /* Hero */
 .hero {
-    min-height: 100vh;
+    min-height: 90vh;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 10%;
-    padding-top: 80px;
+    padding: 120px 5% 60px;
+    gap: 4rem;
+    position: relative;
+    overflow: hidden;
 }
 
-.hero-content h1 {
-    font-size: 4rem;
+.hero-content {
+    flex: 1;
+    z-index: 2;
+    max-width: 600px;
+}
+
+.hero-image-background {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    opacity: 0.3;
+    filter: blur(20px);
+    pointer-events: none;
+}
+
+.hero-image-background img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-visual {
+    flex: 1;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.hero-main-img {
+    width: 100%;
+    max-width: 450px;
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+    border: 1px solid var(--accent-purple);
+    transition: transform 0.3s;
+}
+
+.hero-main-img:hover {
+    transform: scale(1.02);
+}
+
+.hero h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
     line-height: 1.1;
     margin-bottom: 1.5rem;
 }
