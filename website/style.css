@@ -129,7 +129,7 @@ body {
 /* Lift text on desktop to align with the demon image */
 @media screen and (min-width: 1025px) {
     .hero-content {
-        margin-top: -100px;
+        margin-top: -160px;
     }
 }
 
