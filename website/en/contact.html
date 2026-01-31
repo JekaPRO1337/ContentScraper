@@ -7,6 +7,39 @@
     <title>Contact | Content Scraper</title>
     <link rel="stylesheet" href="../style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        @media (max-width: 768px) {
+            .contact-layout-wrapper {
+                padding: 0 15px !important;
+                width: 95% !important;
+                margin: 0 auto !important;
+            }
+
+            .card.glass {
+                padding: 2rem 1rem !important;
+            }
+
+            .card.glass h1 {
+                font-size: 2rem !important;
+            }
+
+            .card.glass h2 {
+                font-size: 1.8rem !important;
+                word-break: break-all !important;
+            }
+
+            .card.glass p {
+                font-size: 1rem !important;
+                overflow-wrap: break-word !important;
+                word-wrap: break-word !important;
+            }
+
+            .hero {
+                padding-bottom: 50px !important;
+                align-items: center !important;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -28,7 +61,7 @@
         </div>
     </nav>
     <main class="hero"
-        style="background: #000; min-height: calc(100vh - 120px); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20vh; padding-top: 100px;">
+        style="background: #000; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding-top: 80px;">
         <div class="contact-layout-wrapper"
             style="position: relative; width: 100%; max-width: 650px; margin: 0 auto; padding: 0 20px;">
             <div class="contact-visual-container"
@@ -68,9 +101,6 @@
             </div>
         </div>
     </main>
-    <footer class="glass">
-        <p>&copy; 2026 Content Scraper. All rights reserved.</p>
-    </footer>
 </body>
 
 </html>
