@@ -449,35 +449,39 @@ async def handle_admin_stats(client: Client, callback_query):
 
 
 async def handle_scrape_menu(client: Client, callback_query):
-    pairs = await db.get_statistics()
+    try:
+        pairs = await db.get_statistics()
 
-    lang = await _get_lang_from_callback(callback_query)
+        lang = await _get_lang_from_callback(callback_query)
 
-    if not pairs:
-        await callback_query.answer(_t(lang, "scrape_menu_no_pairs"), show_alert=True)
-        return
+        if not pairs:
+            await callback_query.answer(_t(lang, "scrape_menu_no_pairs"), show_alert=True)
+            return
 
-    text = _t(lang, "scrape_menu_title")
-    for pair in pairs:
-        text += f"**{_t(lang, 'label_pair_id')}:** {pair['id']}\n"
-        text += f"**{_t(lang, 'label_donor')}:** `{pair['donor_channel']}`\n"
-        text += f"**{_t(lang, 'label_target')}:** `{pair['target_channel']}`\n\n"
+        text = _t(lang, "scrape_menu_title")
+        for pair in pairs:
+            text += f"**{_t(lang, 'label_pair_id')}:** {pair['id']}\n"
+            text += f"**{_t(lang, 'label_donor')}:** `{pair['donor_channel']}`\n"
+            text += f"**{_t(lang, 'label_target')}:** `{pair['target_channel']}`\n\n"
 
-    keyboard_rows = []
-    for pair in pairs:
-        keyboard_rows.append([
-            InlineKeyboardButton(
-                f"{pair['id']}: {pair['donor_channel']} → {pair['target_channel']}",
-                callback_data=f"admin_scrape_pair:{pair['id']}",
-            )
-        ])
-    keyboard_rows.append(
-        [InlineKeyboardButton(_t(lang, "btn_back"), callback_data="admin_menu")]
-    )
+        keyboard_rows = []
+        for pair in pairs:
+            keyboard_rows.append([
+                InlineKeyboardButton(
+                    f"{pair['id']}: {pair['donor_channel']} → {pair['target_channel']}",
+                    callback_data=f"admin_scrape_pair:{pair['id']}",
+                )
+            ])
+        keyboard_rows.append(
+            [InlineKeyboardButton(_t(lang, "btn_back"), callback_data="admin_menu")]
+        )
 
-    keyboard = InlineKeyboardMarkup(keyboard_rows)
+        keyboard = InlineKeyboardMarkup(keyboard_rows)
 
-    await callback_query.edit_message_text(text, reply_markup=keyboard)
+        await callback_query.edit_message_text(text, reply_markup=keyboard)
+    except Exception as e:
+        await callback_query.answer(f"Error in handle_scrape_menu: {e}", show_alert=True)
+        print(f"Error in handle_scrape_menu: {e}")
 
 
 async def handle_scrape_pair(client: Client, callback_query, pair_id: int):
@@ -947,63 +951,72 @@ async def handle_admin_menu_callback(client: Client, callback_query):
     """Handle admin menu callbacks"""
     data = callback_query.data
     
-    if data == "admin_menu":
-        lang = await _get_lang_from_callback(callback_query)
-        await callback_query.edit_message_text(
-            _t(lang, "admin_panel_title"),
-            reply_markup=_admin_menu_keyboard(lang)
-        )
-        await callback_query.answer()
-    elif data == "admin_stats":
-        await handle_admin_stats(client, callback_query)
-    elif data == "admin_list_pairs":
-        await handle_list_pairs(client, callback_query)
-    elif data == "admin_add_pair":
-        await handle_add_pair(client, callback_query)
-    elif data == "admin_remove_pair":
-        await handle_remove_pair(client, callback_query)
-    elif data == "admin_button_rules":
-        await callback_query.answer()
-        await handle_button_rules(client, callback_query)
-    elif data == "admin_link_rules":
-        await callback_query.answer()
-        await handle_link_rules(client, callback_query)
-    elif data == "admin_scrape_menu":
-        await callback_query.answer()
-        await handle_scrape_menu(client, callback_query)
-    elif data.startswith("admin_scrape_pair:"):
-        await callback_query.answer()
+    print(f"DEBUG: Callback Data: {data}")
+    try:
+        if data == "admin_menu":
+            lang = await _get_lang_from_callback(callback_query)
+            await callback_query.edit_message_text(
+                _t(lang, "admin_panel_title"),
+                reply_markup=_admin_menu_keyboard(lang)
+            )
+            await callback_query.answer()
+        elif data == "admin_stats":
+            await handle_admin_stats(client, callback_query)
+        elif data == "admin_list_pairs":
+            await handle_list_pairs(client, callback_query)
+        elif data == "admin_add_pair":
+            await handle_add_pair(client, callback_query)
+        elif data == "admin_remove_pair":
+            await handle_remove_pair(client, callback_query)
+        elif data == "admin_button_rules":
+            await callback_query.answer()
+            await handle_button_rules(client, callback_query)
+        elif data == "admin_link_rules":
+            await callback_query.answer()
+            await handle_link_rules(client, callback_query)
+        elif data == "admin_scrape_menu":
+            await callback_query.answer()
+            await handle_scrape_menu(client, callback_query)
+        elif data.startswith("admin_scrape_pair:"):
+            await callback_query.answer()
+            try:
+                pair_id = int(data.split(":", 1)[1])
+            except ValueError:
+                return
+            await handle_scrape_pair(client, callback_query, pair_id)
+        elif data.startswith("admin_scrape_latest:"):
+            await handle_scrape_latest(client, callback_query)
+        elif data.startswith("admin_scrape_first:"):
+            await handle_scrape_first(client, callback_query)
+        elif data.startswith("admin_scrape_latest_choose:"):
+            await handle_scrape_latest_choose(client, callback_query)
+        elif data.startswith("admin_scrape_first_choose:"):
+            await handle_scrape_first_choose(client, callback_query)
+        elif data.startswith("admin_scrape_full_confirm:"):
+            await handle_scrape_full_confirm(client, callback_query)
+        elif data.startswith("admin_scrape_full:"):
+            await handle_scrape_full(client, callback_query)
+        elif data.startswith("admin_scrape_realtime_toggle:"):
+            await handle_scrape_realtime_toggle(client, callback_query)
+        elif data.startswith("admin_scrape_reset:"):
+            await handle_scrape_reset(client, callback_query)
+        elif data == "admin_language":
+            await callback_query.answer()
+            await handle_language_menu(client, callback_query)
+        elif data.startswith("admin_set_lang:"):
+            await callback_query.answer()
+            lang_code = data.split(":", 1)[1].strip().lower()
+            await handle_set_language(client, callback_query, lang_code)
+        elif data == "admin_close":
+            await callback_query.message.delete()
+            await callback_query.answer()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         try:
-            pair_id = int(data.split(":", 1)[1])
-        except ValueError:
-            return
-        await handle_scrape_pair(client, callback_query, pair_id)
-    elif data.startswith("admin_scrape_latest:"):
-        await handle_scrape_latest(client, callback_query)
-    elif data.startswith("admin_scrape_first:"):
-        await handle_scrape_first(client, callback_query)
-    elif data.startswith("admin_scrape_latest_choose:"):
-        await handle_scrape_latest_choose(client, callback_query)
-    elif data.startswith("admin_scrape_first_choose:"):
-        await handle_scrape_first_choose(client, callback_query)
-    elif data.startswith("admin_scrape_full_confirm:"):
-        await handle_scrape_full_confirm(client, callback_query)
-    elif data.startswith("admin_scrape_full:"):
-        await handle_scrape_full(client, callback_query)
-    elif data.startswith("admin_scrape_realtime_toggle:"):
-        await handle_scrape_realtime_toggle(client, callback_query)
-    elif data.startswith("admin_scrape_reset:"):
-        await handle_scrape_reset(client, callback_query)
-    elif data == "admin_language":
-        await callback_query.answer()
-        await handle_language_menu(client, callback_query)
-    elif data.startswith("admin_set_lang:"):
-        await callback_query.answer()
-        lang_code = data.split(":", 1)[1].strip().lower()
-        await handle_set_language(client, callback_query, lang_code)
-    elif data == "admin_close":
-        await callback_query.message.delete()
-        await callback_query.answer()
+            await callback_query.answer(f"Error: {e}", show_alert=True)
+        except:
+            pass
 
 
 # Command handlers

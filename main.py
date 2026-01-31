@@ -5,10 +5,27 @@ from database import db
 from handlers.scraper import setup_scraper_handler, set_sender_client
 from handlers.admin_menu import setup_admin_handlers, send_admin_menu, set_user_client
 import os
+import logging
 
+try:
+    from config import DEBUG_MODE
+except ImportError:
+    DEBUG_MODE = 'False'
+
+def setup_logging():
+    level = logging.DEBUG if str(DEBUG_MODE).lower() == 'true' else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    # Reduce noise from pyrogram if not debug
+    if level == logging.INFO:
+        logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 async def main():
     """Main function to start the bot"""
+    setup_logging()
+    
     # Initialize database
     print("Initializing database...")
     await db.init_db()

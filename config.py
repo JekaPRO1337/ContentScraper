@@ -14,3 +14,5 @@ DATABASE_PATH = 'content_cloner.db'
 FLOODWAIT_RETRY_DELAY = '1'
 # Максимальное количество попыток при FloodWait
 MAX_FLOODWAIT_RETRIES = '5'
+# Режим отладки (True/False)
+DEBUG_MODE = 'False'
