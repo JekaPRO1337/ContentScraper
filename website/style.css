@@ -556,3 +556,20 @@ footer {
     transform: scale(1.1);
     transition: transform 0.3s ease;
 }
+
+.contact-visual-container {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.spooky-img {
+    width: 100%;
+    border-radius: 20px;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 95%);
+    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 95%);
+    filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.2));
+}
