@@ -13,7 +13,7 @@ import asyncio
 
 
 _user_client: Client | None = None
-SCRAPE_N = 50
+SCRAPE_N = 5
 
 
 def set_user_client(client: Client | None):
@@ -144,9 +144,9 @@ def _t(lang: str, key: str) -> str:
             "scrape_choose_n_latest": "**▶️ Скрап последних постов**\n\nВыберите, сколько последних сообщений скрапить:",
             "scrape_choose_n_first": "**⏮️ Скрап первых постов**\n\nВыберите, сколько самых старых сообщений скрапить:",
             "btn_scrape_n_10": "10",
+            "btn_scrape_n_5": "5",
             "btn_scrape_n_50": "50",
             "btn_scrape_n_100": "100",
-            "btn_scrape_n_200": "200",
             "btn_scrape_reset": "♻️ Сбросить прогресс скрапа",
             "scrape_reset_done": "Прогресс скрапа и счётчик постов для пары {pair_id} сброшены. Можно скрапить заново.",
             "btn_link_rules": "🧮 Замена ключевых слов",
@@ -254,9 +254,9 @@ def _t(lang: str, key: str) -> str:
             "scrape_choose_n_latest": "**▶️ Scrape latest posts**\n\nChoose how many latest messages to scrape:",
             "scrape_choose_n_first": "**⏮️ Scrape first posts**\n\nChoose how many oldest messages to scrape:",
             "btn_scrape_n_10": "10",
+            "btn_scrape_n_5": "5",
             "btn_scrape_n_50": "50",
             "btn_scrape_n_100": "100",
-            "btn_scrape_n_200": "200",
             "btn_scrape_reset": "♻️ Reset scrape progress",
             "scrape_reset_done": "Scrape progress and post counter for pair {pair_id} have been reset. You can scrape again.",
             "btn_link_rules": "🧮 Keyword replacement",
@@ -744,22 +744,22 @@ async def handle_scrape_latest_choose(client: Client, callback_query):
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_10"),
-                callback_data=f"admin_scrape_latest:{pair_id}:10",
+                _t(lang, "btn_scrape_n_5"),
+                callback_data=f"admin_scrape_latest:{pair_id}:5",
             ),
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_50"),
-                callback_data=f"admin_scrape_latest:{pair_id}:50",
+                _t(lang, "btn_scrape_n_10"),
+                callback_data=f"admin_scrape_latest:{pair_id}:10",
             ),
         ],
         [
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_100"),
-                callback_data=f"admin_scrape_latest:{pair_id}:100",
+                _t(lang, "btn_scrape_n_50"),
+                callback_data=f"admin_scrape_latest:{pair_id}:50",
             ),
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_200"),
-                callback_data=f"admin_scrape_latest:{pair_id}:200",
+                _t(lang, "btn_scrape_n_100"),
+                callback_data=f"admin_scrape_latest:{pair_id}:100",
             ),
         ],
         [
@@ -790,22 +790,22 @@ async def handle_scrape_first_choose(client: Client, callback_query):
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_10"),
-                callback_data=f"admin_scrape_first:{pair_id}:10",
+                _t(lang, "btn_scrape_n_5"),
+                callback_data=f"admin_scrape_first:{pair_id}:5",
             ),
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_50"),
-                callback_data=f"admin_scrape_first:{pair_id}:50",
+                _t(lang, "btn_scrape_n_10"),
+                callback_data=f"admin_scrape_first:{pair_id}:10",
             ),
         ],
         [
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_100"),
-                callback_data=f"admin_scrape_first:{pair_id}:100",
+                _t(lang, "btn_scrape_n_50"),
+                callback_data=f"admin_scrape_first:{pair_id}:50",
             ),
             InlineKeyboardButton(
-                _t(lang, "btn_scrape_n_200"),
-                callback_data=f"admin_scrape_first:{pair_id}:200",
+                _t(lang, "btn_scrape_n_100"),
+                callback_data=f"admin_scrape_first:{pair_id}:100",
             ),
         ],
         [
@@ -1266,20 +1266,21 @@ def setup_admin_handlers(client: Client):
     ))
     
     # Setup command handlers
-    admin_filter = filters.command("admin") & filters.user(ADMIN_ID)
-    menu_filter = (filters.command(["start", "menu"]) & filters.user(ADMIN_ID))
-    cleardb_filter = filters.command("cleardb") & filters.user(ADMIN_ID)
-    addpair_filter = filters.command("addpair") & filters.user(ADMIN_ID)
-    removepair_filter = filters.command("removepair") & filters.user(ADMIN_ID)
-    addrule_filter = filters.command("addrule") & filters.user(ADMIN_ID)
-    removerule_filter = filters.command("removerule") & filters.user(ADMIN_ID)
-    removerulepat_filter = filters.command("removerulepat") & filters.user(ADMIN_ID)
-    addbtn1_filter = filters.command("addbtn1") & filters.user(ADMIN_ID)
-    addbtn2_filter = filters.command("addbtn2") & filters.user(ADMIN_ID)
-    removebtn_filter = filters.command("removebtn") & filters.user(ADMIN_ID)
+    admin_id_int = int(ADMIN_ID)
+    admin_filter = filters.command("admin") & filters.user(admin_id_int)
+    menu_filter = (filters.command(["start", "menu"]) & filters.user(admin_id_int))
+    cleardb_filter = filters.command("cleardb") & filters.user(admin_id_int)
+    addpair_filter = filters.command("addpair") & filters.user(admin_id_int)
+    removepair_filter = filters.command("removepair") & filters.user(admin_id_int)
+    addrule_filter = filters.command("addrule") & filters.user(admin_id_int)
+    removerule_filter = filters.command("removerule") & filters.user(admin_id_int)
+    removerulepat_filter = filters.command("removerulepat") & filters.user(admin_id_int)
+    addbtn1_filter = filters.command("addbtn1") & filters.user(admin_id_int)
+    addbtn2_filter = filters.command("addbtn2") & filters.user(admin_id_int)
+    removebtn_filter = filters.command("removebtn") & filters.user(admin_id_int)
     
     # Setup ID resolver
-    id_resolver_filter = filters.forwarded & filters.user(ADMIN_ID)
+    id_resolver_filter = filters.forwarded & filters.user(admin_id_int)
     client.add_handler(MessageHandler(handle_forwarded_message, id_resolver_filter))
     
     client.add_handler(MessageHandler(admin_command, admin_filter))

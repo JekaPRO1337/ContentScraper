@@ -122,6 +122,25 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
         # Use donor_channel from DB as the key for consistency
         channel_key = donor_channel
         
+        # Fresh Start Logic
+        # If this channel hasn't been tracked yet in this session, we initialize the last_id to the current latest message
+        # effectively ignoring old history and only listening for NEW messages.
+        if channel_key not in last_message_ids:
+            try:
+                # Get just 1 latest message to establish baseline
+                async for message in client.get_chat_history(chat.id, limit=1):
+                    last_message_ids[channel_key] = message.id
+                    print(f"[{donor_channel}] Initialized fresh start. Ignoring messages before ID {message.id}.")
+                
+                # If channel is empty, set to 0
+                if channel_key not in last_message_ids:
+                    last_message_ids[channel_key] = 0
+                
+                return # Skip processing for this first iteration
+            except Exception as e:
+                print(f"Error initializing fresh start for {donor_channel}: {str(e)}")
+                return
+
         # Get last processed message ID
         last_id = last_message_ids.get(channel_key, 0)
         
