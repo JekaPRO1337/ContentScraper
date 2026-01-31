@@ -478,6 +478,7 @@ async def handle_scrape_menu(client: Client, callback_query):
 
         keyboard = InlineKeyboardMarkup(keyboard_rows)
 
+        await callback_query.answer()
         await callback_query.edit_message_text(text, reply_markup=keyboard)
     except Exception as e:
         await callback_query.answer(f"Error in handle_scrape_menu: {e}", show_alert=True)
@@ -969,16 +970,12 @@ async def handle_admin_menu_callback(client: Client, callback_query):
         elif data == "admin_remove_pair":
             await handle_remove_pair(client, callback_query)
         elif data == "admin_button_rules":
-            await callback_query.answer()
             await handle_button_rules(client, callback_query)
         elif data == "admin_link_rules":
-            await callback_query.answer()
             await handle_link_rules(client, callback_query)
         elif data == "admin_scrape_menu":
-            await callback_query.answer()
             await handle_scrape_menu(client, callback_query)
         elif data.startswith("admin_scrape_pair:"):
-            await callback_query.answer()
             try:
                 pair_id = int(data.split(":", 1)[1])
             except ValueError:
@@ -1001,10 +998,8 @@ async def handle_admin_menu_callback(client: Client, callback_query):
         elif data.startswith("admin_scrape_reset:"):
             await handle_scrape_reset(client, callback_query)
         elif data == "admin_language":
-            await callback_query.answer()
             await handle_language_menu(client, callback_query)
         elif data.startswith("admin_set_lang:"):
-            await callback_query.answer()
             lang_code = data.split(":", 1)[1].strip().lower()
             await handle_set_language(client, callback_query, lang_code)
         elif data == "admin_close":
