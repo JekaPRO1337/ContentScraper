@@ -552,16 +552,25 @@ footer {
     }
 }
 
-.special-feature:hover .vn-icon-container {
-    transform: scale(1.1);
-    transition: transform 0.3s ease;
+.sniffer-icon-img {
+    height: 48px !important;
+    width: auto !important;
+    object-fit: contain;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.4));
+}
+
+.vn-icon-container {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
 }
 
 .contact-visual-container {
     position: relative;
     width: 100%;
-    max-width: 450px;
-    margin: 0 auto 1.5rem;
     display: flex;
     justify-content: center;
 }
@@ -569,7 +578,5 @@ footer {
 .spooky-img {
     width: 100%;
     border-radius: 20px;
-    mask-image: radial-gradient(circle at center, black 40%, transparent 95%);
-    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 95%);
     filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.2));
 }

@@ -10,7 +10,6 @@
 </head>
 
 <body>
-    <div class="bg-glow"></div>
     <nav class="navbar glass">
         <div class="logo">Content<span>Scraper</span></div>
         <div class="menu-toggle">
@@ -28,21 +27,25 @@
             </div>
         </div>
     </nav>
-    <main class="hero">
-        <section class="hero-content" style="text-align: center; max-width: 100%; width: 100%;">
-            <h1 class="gradient-text">Связаться с нами</h1>
-            <p style="margin: 0 auto 3rem;">Нужна помощь с настройкой или есть индивидуальные требования? Мы здесь,
-                чтобы помочь.</p>
-            <div class="contact-visual-container">
-                <img src="images/contact_visual.png" alt="Avatar" class="spooky-img">
+    <main class="hero"
+        style="background: #000; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding-top: 80px;">
+        <div class="contact-layout-wrapper" style="position: relative; width: 100%; max-width: 600px; margin: 0 auto;">
+            <div class="contact-visual-container"
+                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; z-index: 1; opacity: 0.6;">
+                <img src="images/contact_visual.png" alt="Ghost" class="spooky-img"
+                    style="width: 100%; mask-image: radial-gradient(circle at center, black 30%, transparent 80%); -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%);">
             </div>
-            <div class="card glass" style="max-width: 500px; margin: 0 auto; padding: 3rem;">
-                <p>Поддержка в Telegram</p>
-                <h3>@N1_htPr1</h3>
-                <p style="margin-top: 2rem;">Email</p>
-                <p>bestbetgamess@gmail.com</p>
+            <div class="card glass"
+                style="position: relative; z-index: 2; width: 100%; padding: 3rem; backdrop-filter: blur(10px) brightness(0.5); border: 1px solid rgba(139, 92, 246, 0.3);">
+                <h1 class="gradient-text" style="text-align: center; margin-bottom: 2rem;">Связаться с нами</h1>
+                <div style="text-align: center;">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Поддержка в Telegram</p>
+                    <h2 style="color: var(--text-primary); margin-bottom: 2rem; font-size: 2rem;">@N1_htPr1</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Email</p>
+                    <p style="color: var(--text-primary); font-size: 1.2rem;">bestbetgamess@gmail.com</p>
+                </div>
             </div>
-        </section>
+        </div>
     </main>
     <footer class="glass">
         <p>&copy; 2026 Content Scraper. Все права защищены.</p>
