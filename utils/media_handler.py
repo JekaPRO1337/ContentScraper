@@ -9,6 +9,8 @@ try:
 except:
     MAX_FLOODWAIT_RETRIES = 5
     FLOODWAIT_RETRY_DELAY = 1
+from utils.license_check import verify_license
+from config import SNIFFER_LICENSE
 from database import db
 import asyncio
 import re
