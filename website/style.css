@@ -487,7 +487,6 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
     transform-origin: center;
 }
 
@@ -524,7 +523,8 @@ footer {
 }
 
 .vn-rec-dot {
-    fill: #ff4d4d;
+    fill: #ff0000;
+    /* Pure Red */
     animation: vn-pulse 2s ease-in-out infinite;
 }
 
