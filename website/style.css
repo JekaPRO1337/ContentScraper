@@ -478,3 +478,81 @@ footer {
         text-align: center;
     }
 }
+
+/* Video Note Icon Premium Style */
+.vn-icon-container {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    transform-origin: center;
+}
+
+.vn-icon-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.6));
+}
+
+.vn-outer-ring {
+    fill: none;
+    stroke: var(--accent-purple);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 2;
+    transform-origin: center;
+    animation: vn-rotate 15s linear infinite;
+    opacity: 0.6;
+}
+
+.vn-inner-circle {
+    fill: rgba(139, 92, 246, 0.1);
+    stroke: var(--accent-purple);
+    stroke-width: 2;
+}
+
+.vn-lens-body {
+    fill: #1a1a1a;
+    stroke: rgba(255, 255, 255, 0.2);
+    stroke-width: 0.5;
+}
+
+.vn-lens-glass {
+    fill: url(#vn-lens-grad);
+}
+
+.vn-rec-dot {
+    fill: #ff4d4d;
+    animation: vn-pulse 2s ease-in-out infinite;
+}
+
+@keyframes vn-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes vn-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        filter: brightness(1.5);
+    }
+}
+
+.special-feature:hover .vn-icon-container {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
