@@ -12,6 +12,53 @@ except:
 from database import db
 import asyncio
 import re
+import os
+import subprocess
+import shutil
+
+# Check for local ffmpeg
+LOCAL_FFMPEG = os.path.join(os.getcwd(), 'ffmpeg.exe')
+FFMPEG_CMD = LOCAL_FFMPEG if os.path.exists(LOCAL_FFMPEG) else 'ffmpeg'
+
+def convert_video_note(input_path: str, output_path: str) -> bool:
+    """
+    Convert video to a 1:1 round video note format (384x384).
+    Returns True if successful, False otherwise.
+    """
+    try:
+        # 1. Probe for duration (limit to 59s) and dimensions if needed, 
+        # but simpler to just force crop and scale.
+        
+        # Command explanation:
+        # -vf "crop=min(iw\,ih):min(iw\,ih),scale=384:384" -> Crop to square, then resize to 384x384
+        # -c:v libx264 -> H.264 video
+        # -preset fast -> Fast encoding
+        # -crf 26 -> Reasonable quality
+        # -c:a copy -> Copy audio (no re-encode)
+        # -t 59 -> Trim to 59 seconds max (video note limit is 1m)
+        # -pix_fmt yuv420p -> Ensure compatibility
+        
+        cmd = [
+            FFMPEG_CMD, '-y',
+            '-i', input_path,
+            '-vf', 'crop=min(iw,ih):min(iw,ih),scale=384:384',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '26',
+            '-c:a', 'aac', # Re-encode audio to aac to be safe
+            '-b:a', '64k',
+            '-t', '59',
+            '-pix_fmt', 'yuv420p',
+            output_path
+        ]
+        
+        # Suppress output unless debug
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except Exception as e:
+        print(f"FFmpeg conversion error: {e}")
+        return False
+
 
 
 async def send_message_with_retry(client: Client, chat_id, **kwargs):
@@ -217,12 +264,50 @@ async def download_and_clone_message(
                 reply_markup=reply_markup
             )
         elif message.video_note:
+            # Video notes need special handling: 
+            # 1. Download
+            # 2. Convert to square 1:1 using ffmpeg if available
+            # 3. Send as video_note
+            
+            note_path = file_path
+            
+            # If we didn't download it yet (e.g. file_path is None because we only dl for photo/video/doc/audio/voice above)
+            # We must download it now.
+            if not note_path:
+                note_path = await client.download_media(message)
+                
+            final_path = note_path
+            converted_path = f"{note_path}_converted.mp4"
+            
+            # Try conversion
+            if convert_video_note(note_path, converted_path):
+                final_path = converted_path
+            else:
+                print("Video note conversion failed or ffmpeg missing. Trying raw send.")
+
             await send_message_with_retry(
                 sender,
                 chat_id=target_channel,
-                video_note=message.video_note.file_id,
+                video_note=final_path,
                 reply_markup=reply_markup
             )
+            
+            # Cleanup converted file if exists
+            if final_path != note_path and os.path.exists(final_path):
+                try:
+                    os.remove(final_path)
+                except:
+                    pass
+            
+            # Original file cleaned up in finally block IF it was assigned to file_path
+            # But here we might have downloaded it separately into note_path.
+            # So let's ensure cleanup of the downloaded file logic is consistent.
+            if not file_path and os.path.exists(note_path):
+                 try:
+                    os.remove(note_path)
+                 except:
+                    pass
+
         elif message.sticker:
             await send_message_with_retry(
                 sender,
