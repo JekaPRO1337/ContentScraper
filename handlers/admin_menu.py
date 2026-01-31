@@ -350,9 +350,10 @@ async def _pair_access_report(bot_client: Client, donor: str, target: str) -> st
         # Check admin rights
         member = await bot_client.get_chat_member(target_chat.id, me.id)
         role = str(getattr(member, "status", "")).lower()
-        if role not in {"administrator", "owner"}:
+        # "creator" is often used instead of "owner" in API responses
+        if "administrator" not in role and "owner" not in role and "creator" not in role:
             target_status = "❌"
-            target_hint = "Бот не администратор целевого канала."
+            target_hint = f"Бот имеет статус '{role}', а нужен 'administrator'."
             
     except Exception as e:
         target_status = "❌"
