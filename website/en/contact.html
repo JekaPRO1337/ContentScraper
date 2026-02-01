@@ -5,12 +5,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact | Content Scraper</title>
-    <!-- Cache busting: v=3 -->
-    <link rel="stylesheet" href="../style.css?v=3">
+    <!-- Cache busting: v=4 -->
+    <link rel="stylesheet" href="../style.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Reverted to inline styles for maximum reliability on Vercel */
+        @media (max-width: 768px) {
+            .contact-layout-wrapper {
+                padding: 0 15px !important;
+                width: 95% !important;
+                margin: 0 auto !important;
+            }
+
+            .card.glass {
+                padding: 2rem 1rem !important;
+            }
+
+            .card.glass h1 {
+                font-size: 2rem !important;
+            }
+
+            .card.glass h2 {
+                font-size: 1.8rem !important;
+                word-break: break-all !important;
+            }
+
+            .card.glass p {
+                font-size: 1rem !important;
+                overflow-wrap: break-word !important;
+                word-wrap: break-word !important;
+            }
+
+            .hero {
+                padding-bottom: 50px !important;
+                align-items: center !important;
+            }
+        }
+    </style>
 </head>
 
-<body class="contact-page">
+<body>
     <nav class="navbar glass">
         <div class="logo">Content<span>Scraper</span></div>
         <div class="menu-toggle">
