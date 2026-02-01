@@ -254,7 +254,18 @@ body {
 }
 
 .hero-main-img {
-    display: none;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(139, 92, 246, 0.4);
+    border: 1px solid var(--accent);
+    transition: transform 0.3s ease;
+    margin-top: 20px;
+    display: block;
+}
+
+.hero-main-img:hover {
+    transform: translateY(-10px) scale(1.02);
 }
 
 /* Features */

@@ -132,9 +132,17 @@ async def main():
         
         try:
             current_admin_id = int(ADMIN_ID)
-            await send_admin_menu(bot_client, current_admin_id, user_id=current_admin_id)
-        except:
-            print("WARNING: ADMIN_ID is not a valid number or not set. Admin menu not sent to admin account.")
+        except ValueError:
+            print(f"❌ ERROR: ADMIN_ID '{ADMIN_ID}' is not a valid integer. Check config.py.")
+            current_admin_id = None
+
+        if current_admin_id:
+            try:
+                await send_admin_menu(bot_client, current_admin_id, user_id=current_admin_id)
+                print(f"✅ Admin menu sent to {current_admin_id}")
+            except Exception as e:
+                print(f"⚠️  Could not send admin menu to {current_admin_id}: {e}")
+                print("   (Make sure you have started the bot with /start)")
     else:
         print("⚠️  Bot token not set. Admin commands will not work.")
         print("   Set BOT_TOKEN in config.py file to enable admin panel.")
