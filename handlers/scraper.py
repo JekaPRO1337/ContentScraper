@@ -506,8 +506,8 @@ async def download_and_clone_media_group(
             caption, caption_parse_mode = await apply_link_rules_to_text(caption)
             if caption_parse_mode:
                 caption_entities = None
-            if msg.reply_markup:
-                reply_markup = await replace_markup(msg.reply_markup)
+            # Always call replace_markup to support Custom Append mode
+            reply_markup = await replace_markup(msg.reply_markup)
         
         downloaded_media.append({
             'message': msg,

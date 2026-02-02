@@ -48,7 +48,7 @@ def _t(lang: str, key: str) -> str:
             "btn_stats": "📊 Статистика",
             "btn_add_pair": "➕ Добавить пару",
             "btn_remove_pair": "➖ Удалить пару",
-            "btn_button_rules": "🧷 Кнопки",
+            "btn_button_rules": "🕹️ Управление кнопками",
             "btn_list_pairs": "📋 Список пар",
             "btn_language": "🌐 Язык",
             "btn_close": "❌ Закрыть",
@@ -69,18 +69,32 @@ def _t(lang: str, key: str) -> str:
             "add_pair_prompt": "Отправьте пару в формате:\n`/addpair donor_channel target_channel`\n\nПример:\n`/addpair @donorchannel @targetchannel`\n\nИли используйте ID каналов:\n`/addpair -1001234567890 -1009876543210`",
             "remove_pair_title": "**➖ Удалить пару**\n\n",
             "remove_pair_prompt": "Отправьте ID пары для удаления:\n`/removepair <pair_id>`\n\nДоступные пары:\n",
-            "button_rules_title": "**🧷 Кнопки**\n\n",
+            "button_rules_title": "**🕹️ Управление кнопками**\n\n",
             "button_rules_none": "Кнопки не настроены.\n\n",
-            "button_rules_commands": "**Команды:**\n`/addbtn1 текст|url`\n`/addbtn2 t1|u1 || t2|u2`\n`/removebtn` — удалить кнопки",
-            "label_mode": "Режим",
+            "button_rules_instructions": "Это меню управления кнопками, которые вы берете с канала донора, а также тех, которые вы хотите постить сами.\n\n"
+                                         "**Режимы:**\n"
+                                         "1. **Обычный**: Кнопки донора заменяются на ваши. Если у донора нет кнопок — ничего не добавится.\n"
+                                         "2. **Принудительный (Свои кнопки)**: Кнопки донора полностью игнорируются, а **ваши кнопки добавляются к каждому посту**! Это идеально для добавления ссылок 'Связаться', 'Отзывы' или 'Цены' под каждый пост.\n\n"
+                                         "**Команды:**\n"
+                                         "`/addbtn1 текст|url` — установить 1 кнопку\n"
+                                         "`/addbtn2 t1|u1 || t2|u2` — установить 2 кнопки\n"
+                                         "`/addbtn3 t1|u1 || t2|u2 || t3|u3` — установить 3 кнопки\n"
+                                         "`/removebtn` — удалить все кнопки\n\n"
+                                         "**Максимум можно добавить 3 кнопки!**",
+            "label_custom_mode": "Режим 'Свои кнопки'",
+            "btn_custom_mode_on": "🚀 Свои кнопки: ВКЛ",
+            "btn_custom_mode_off": "🚀 Свои кнопки: ВЫКЛ",
+            "label_mode": "Количество",
             "label_btn1": "Кнопка 1",
             "label_btn2": "Кнопка 2",
+            "label_btn3": "Кнопка 3",
             "addbtn1_usage": "**Использование:** `/addbtn1 текст|url`",
             "addbtn2_usage": "**Использование:** `/addbtn2 t1|u1 || t2|u2`",
+            "addbtn3_usage": "**Использование:** `/addbtn3 t1|u1 || t2|u2 || t3|u3`",
             "removebtn_usage": "**Использование:** `/removebtn`",
-            "button_rule_added": "✅ Кнопки обновлены!",
-            "button_rule_removed": "✅ Кнопки удалены!",
-            "button_rule_invalid": "❌ Некорректный формат. Проверь команду.",
+            "button_rule_added": "✅ Настройки кнопок обновлены!",
+            "button_rule_removed": "✅ Все кнопки удалены!",
+            "button_rule_invalid": "❌ Ошибка в формате. Проверь палочки `|` и `||`.",
             "label_pair_id": "ID пары",
             "label_donor": "Донор",
             "label_target": "Цель",
@@ -171,7 +185,7 @@ def _t(lang: str, key: str) -> str:
             "btn_stats": "📊 Statistics",
             "btn_add_pair": "➕ Add Channel Pair",
             "btn_remove_pair": "➖ Remove Channel Pair",
-            "btn_button_rules": "🧷 Buttons",
+            "btn_button_rules": "🕹️ Button Management",
             "btn_list_pairs": "📋 Channel Pairs",
             "btn_language": "🌐 Language",
             "btn_close": "❌ Close",
@@ -192,18 +206,32 @@ def _t(lang: str, key: str) -> str:
             "add_pair_prompt": "Send the pair in format:\n`/addpair donor_channel target_channel`\n\nExample:\n`/addpair @donorchannel @targetchannel`\n\nOr use channel IDs:\n`/addpair -1001234567890 -1009876543210`",
             "remove_pair_title": "**➖ Remove Channel Pair**\n\n",
             "remove_pair_prompt": "Send pair ID to remove:\n`/removepair <pair_id>`\n\nAvailable pairs:\n",
-            "button_rules_title": "**🧷 Buttons**\n\n",
+            "button_rules_title": "**🕹️ Button Management**\n\n",
             "button_rules_none": "Buttons are not configured.\n\n",
-            "button_rules_commands": "**Commands:**\n`/addbtn1 text|url`\n`/addbtn2 t1|u1 || t2|u2`\n`/removebtn` — remove buttons",
-            "label_mode": "Mode",
+            "button_rules_instructions": "This menu manages buttons taken from the donor and those you want to post yourself.\n\n"
+                                         "**Modes:**\n"
+                                         "1. **Normal**: Donor buttons are replaced. If donor has no buttons, nothing is added.\n"
+                                         "2. **Custom Mode**: Donor buttons are ignored, and **your buttons are added to every post**! Ideal for 'Contact', 'Reviews' or 'Prices' links.\n\n"
+                                         "**Commands:**\n"
+                                         "`/addbtn1 text|url` — set 1 button\n"
+                                         "`/addbtn2 t1|u1 || t2|u2` — set 2 buttons\n"
+                                         "`/addbtn3 t1|u1 || t2|u2 || t3|u3` — set 3 buttons\n"
+                                         "`/removebtn` — delete all buttons\n\n"
+                                         "**Maximum of 3 buttons allowed!**",
+            "label_custom_mode": "Custom Buttons Mode",
+            "btn_custom_mode_on": "🚀 Custom Mode: ON",
+            "btn_custom_mode_off": "🚀 Custom Mode: OFF",
+            "label_mode": "Count",
             "label_btn1": "Button 1",
             "label_btn2": "Button 2",
+            "label_btn3": "Button 3",
             "addbtn1_usage": "**Usage:** `/addbtn1 text|url`",
             "addbtn2_usage": "**Usage:** `/addbtn2 t1|u1 || t2|u2`",
+            "addbtn3_usage": "**Usage:** `/addbtn3 t1|u1 || t2|u2 || t3|u3`",
             "removebtn_usage": "**Usage:** `/removebtn`",
-            "button_rule_added": "✅ Buttons updated!",
-            "button_rule_removed": "✅ Buttons removed!",
-            "button_rule_invalid": "❌ Invalid format. Please check the command.",
+            "button_rule_added": "✅ Button settings updated!",
+            "button_rule_removed": "✅ All buttons removed!",
+            "button_rule_invalid": "❌ Invalid format. Check `|` and `||` separators.",
             "label_pair_id": "Pair ID",
             "label_donor": "Donor",
             "label_target": "Target",
@@ -549,27 +577,51 @@ async def handle_scrape_pair(client: Client, callback_query, pair_id: int):
 
 async def handle_button_rules(client: Client, callback_query):
     rules = await db.get_all_button_rules()
-
     lang = await _get_lang_from_callback(callback_query)
     text = _t(lang, "button_rules_title")
+    text += _t(lang, "button_rules_instructions") + "\n\n"
 
+    custom_mode = False
     if rules:
         rule = rules[0]
-        mode = (rule.get('mode') or '').lower()
-        text += f"{_t(lang, 'label_mode')}: `{mode}`\n"
-        text += f"{_t(lang, 'label_btn1')}: `{(rule.get('text1') or '')}` | `{(rule.get('url1') or '')}`\n"
-        if mode == 'two':
-            text += f"{_t(lang, 'label_btn2')}: `{(rule.get('text2') or '')}` | `{(rule.get('url2') or '')}`\n"
+        custom_mode = bool(rule.get('custom_buttons_mode', 0))
+        mode = (rule.get('mode') or 'one').lower()
+        
+        status_icon = "🚀" if custom_mode else "📄"
+        text += f"**{_t(lang, 'label_custom_mode')}**: {'✅ ВКЛ' if custom_mode else '❌ ВЫКЛ'}\n"
+        text += f"**{_t(lang, 'label_mode')}**: `{mode}`\n\n"
+        
+        text += f"1️⃣ `{rule.get('text1') or ''}` | `{rule.get('url1') or ''}`\n"
+        if mode in ['two', 'three']:
+            text += f"2️⃣ `{rule.get('text2') or ''}` | `{rule.get('url2') or ''}`\n"
+        if mode == 'three':
+            text += f"3️⃣ `{rule.get('text3') or ''}` | `{rule.get('url3') or ''}`\n"
         text += "\n"
     else:
         text += _t(lang, "button_rules_none")
 
-    text += "\n" + _t(lang, "button_rules_commands")
-
     keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                _t(lang, "btn_custom_mode_off" if custom_mode else "btn_custom_mode_on"),
+                callback_data=f"admin_toggle_custom_buttons:{1 if not custom_mode else 0}"
+            )
+        ],
         [InlineKeyboardButton(_t(lang, "btn_back"), callback_data="admin_menu")]
     ])
     await callback_query.edit_message_text(text, reply_markup=keyboard)
+
+
+async def handle_toggle_custom_buttons_mode(client: Client, callback_query):
+    try:
+        data = callback_query.data.split(":")[1]
+        enabled = data == "1"
+        await db.set_custom_buttons_mode(enabled)
+        lang = await _get_lang_from_callback(callback_query)
+        await callback_query.answer("✅ Режим обновлен" if lang == "ru" else "✅ Mode updated")
+        await handle_button_rules(client, callback_query)
+    except Exception as e:
+        await callback_query.answer(f"Error: {e}", show_alert=True)
 
 
 async def handle_list_pairs(client: Client, callback_query):
@@ -972,6 +1024,8 @@ async def handle_admin_menu_callback(client: Client, callback_query):
             await handle_remove_pair(client, callback_query)
         elif data == "admin_button_rules":
             await handle_button_rules(client, callback_query)
+        elif data.startswith("admin_toggle_custom_buttons:"):
+            await handle_toggle_custom_buttons_mode(client, callback_query)
         elif data == "admin_link_rules":
             await handle_link_rules(client, callback_query)
         elif data == "admin_scrape_menu":
@@ -1116,8 +1170,7 @@ async def add_button_rule_one_command(client: Client, message: Message):
             await message.reply_text(_t(lang, "button_rule_invalid"))
             return
 
-        await db.clear_button_rules()
-        await db.add_button_rule('one', '', parts[0], parts[1])
+        await db.add_button_rule('one', parts[0], parts[1])
         await message.reply_text(_t(lang, "button_rule_added"))
     except Exception as e:
         await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
@@ -1142,8 +1195,33 @@ async def add_button_rule_two_command(client: Client, message: Message):
             await message.reply_text(_t(lang, "button_rule_invalid"))
             return
 
-        await db.clear_button_rules()
-        await db.add_button_rule('two', '', p1[0], p1[1], '', p2[0], p2[1])
+        await db.add_button_rule('two', p1[0], p1[1], p2[0], p2[1])
+        await message.reply_text(_t(lang, "button_rule_added"))
+    except Exception as e:
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
+async def add_button_rule_three_command(client: Client, message: Message):
+    lang = await _get_lang_from_message(message)
+    try:
+        payload = message.text.split(maxsplit=1)
+        if len(payload) < 2:
+            await message.reply_text(_t(lang, "addbtn3_usage"))
+            return
+        raw = payload[1].strip()
+        groups = [g.strip() for g in raw.split('||')]
+        if len(groups) != 3:
+            await message.reply_text(_t(lang, "button_rule_invalid"))
+            return
+
+        p1 = [p.strip() for p in groups[0].split('|')]
+        p2 = [p.strip() for p in groups[1].split('|')]
+        p3 = [p.strip() for p in groups[2].split('|')]
+        if len(p1) != 2 or len(p2) != 2 or len(p3) != 2:
+            await message.reply_text(_t(lang, "button_rule_invalid"))
+            return
+
+        await db.add_button_rule('three', p1[0], p1[1], p2[0], p2[1], p3[0], p3[1])
         await message.reply_text(_t(lang, "button_rule_added"))
     except Exception as e:
         await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
@@ -1286,6 +1364,7 @@ def setup_admin_handlers(client: Client):
     removerulepat_filter = filters.command("removerulepat") & filters.user(admin_id_int)
     addbtn1_filter = filters.command("addbtn1") & filters.user(admin_id_int)
     addbtn2_filter = filters.command("addbtn2") & filters.user(admin_id_int)
+    addbtn3_filter = filters.command("addbtn3") & filters.user(admin_id_int)
     removebtn_filter = filters.command("removebtn") & filters.user(admin_id_int)
     
     # Setup ID resolver
@@ -1302,4 +1381,5 @@ def setup_admin_handlers(client: Client):
     client.add_handler(MessageHandler(remove_rule_by_pattern_command, removerulepat_filter))
     client.add_handler(MessageHandler(add_button_rule_one_command, addbtn1_filter))
     client.add_handler(MessageHandler(add_button_rule_two_command, addbtn2_filter))
+    client.add_handler(MessageHandler(add_button_rule_three_command, addbtn3_filter))
     client.add_handler(MessageHandler(remove_button_rule_command, removebtn_filter))

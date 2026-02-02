@@ -172,10 +172,8 @@ async def download_and_clone_message(
 
     sender = sender_client or client
     
-    # Replace markup if exists
-    reply_markup = None
-    if message.reply_markup:
-        reply_markup = await replace_markup(message.reply_markup)
+    # Replace markup (or inject custom ones)
+    reply_markup = await replace_markup(message.reply_markup)
     
     if message.media_group_id:
         return None

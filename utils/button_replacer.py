@@ -3,39 +3,54 @@ from database import db
 import re
 
 
-async def replace_markup(markup: InlineKeyboardMarkup) -> InlineKeyboardMarkup | None:
+async def replace_markup(markup: InlineKeyboardMarkup | None) -> InlineKeyboardMarkup | None:
     """
     Build buttons based on global button rules.
-    If rules are configured, original buttons are ignored and replaced with one row
-    containing 1 or 2 buttons from the config.
-    If no rules are configured, the original markup is returned.
+    If custom_buttons_mode is enabled, the original donor buttons are completely ignored
+    and replaced with our custom buttons.
+    Otherwise, we only replace donor buttons IF they existed.
+    Supports up to 3 buttons.
     """
-    if not markup or not markup.inline_keyboard:
-        return None
-
     rules = await db.get_all_button_rules()
     if not rules:
         return markup
 
     rule = rules[0]
-    mode = (rule.get("mode") or "").lower()
+    custom_mode = bool(rule.get("custom_buttons_mode", 0))
+    mode = (rule.get("mode") or "one").lower()
+
+    # If NOT in custom_mode and donor has NO buttons, we return None (don't inject)
+    # UNLESS it's custom_mode, then we ALWAYS inject our buttons.
+    if not custom_mode and (not markup or not markup.inline_keyboard):
+        return None
 
     buttons = []
-
+    
+    # Button 1
     text1 = (rule.get("text1") or "").strip()
     url1 = (rule.get("url1") or "").strip()
     if text1 and url1:
         buttons.append(InlineKeyboardButton(text1, url=url1))
 
-    if mode == "two":
+    # Button 2
+    if mode in ["two", "three"]:
         text2 = (rule.get("text2") or "").strip()
         url2 = (rule.get("url2") or "").strip()
         if text2 and url2:
             buttons.append(InlineKeyboardButton(text2, url=url2))
 
-    if not buttons:
-        return None
+    # Button 3
+    if mode == "three":
+        text3 = (rule.get("text3") or "").strip()
+        url3 = (rule.get("url3") or "").strip()
+        if text3 and url3:
+            buttons.append(InlineKeyboardButton(text3, url=url3))
 
+    if not buttons:
+        # If in custom_mode but no buttons configured, return original markup (or None)
+        return markup if not custom_mode else None
+
+    # Return as a single row of buttons
     return InlineKeyboardMarkup([buttons])
 
 
