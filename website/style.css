@@ -121,16 +121,18 @@ body {
 }
 
 .hero h1 {
-    /* Responsive font-size that scales from 2.5rem to 4.5rem depending on viewport */
-    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    /* Responsive font-size: scaled down for mobile, up for 4K */
+    font-size: clamp(2rem, 7vw, 4.5rem);
     line-height: 1.1;
     margin-bottom: 1.5rem;
     background: linear-gradient(to right, #fff, #94a3b8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-family: 'Unbounded', sans-serif;
-    word-break: keep-all;
-    /* Prevent breaking the long word "Масштабируйте" */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    width: 100%;
 }
 
 .hero h1 span {
@@ -626,21 +628,21 @@ body {
     }
 
     .hero h1 {
-        font-size: 2.5rem;
+        font-size: clamp(1.8rem, 10vw, 2.5rem);
+        word-wrap: break-word;
     }
 
-    .hero-btns {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .hero-visual {
-        display: none;
+    .hero-content {
+        width: 100%;
+        padding: 0 5%;
     }
 
     .hero-image-background {
         width: 100%;
         opacity: 0.1;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
     }
 }
 
