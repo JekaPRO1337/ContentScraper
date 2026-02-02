@@ -114,18 +114,23 @@ body {
 }
 
 .hero-content {
-    max-width: 600px;
+    max-width: 800px;
+    /* Increased to accommodate "Масштабируйте" */
     z-index: 2;
+    flex: 1.2;
 }
 
 .hero h1 {
-    font-size: 4rem;
+    /* Responsive font-size that scales from 2.5rem to 4.5rem depending on viewport */
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
     line-height: 1.1;
     margin-bottom: 1.5rem;
     background: linear-gradient(to right, #fff, #94a3b8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-family: 'Unbounded', sans-serif;
+    word-break: keep-all;
+    /* Prevent breaking the long word "Масштабируйте" */
 }
 
 .hero h1 span {
@@ -198,18 +203,18 @@ body {
 
 .hero-image-background {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 32%;
+    left: 65%;
     /* Shifted to the right as requested to make it peek out from behind the main image */
     transform: translate(-30%, -45%);
-    width: 140%;
-    height: 140%;
+    width: 120%;
+    height: 120%;
     z-index: -1;
-    opacity: 0.5;
+    opacity: 1;
     /* Increased opacity for strong presence */
     mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
     -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
-    filter: blur(15px);
+    filter: blur(8px);
     /* Further reduced blur for sharper "ghost" effect */
 }
 
