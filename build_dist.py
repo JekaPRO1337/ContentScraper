@@ -26,6 +26,7 @@ def scrub_config(content):
     content = re.sub(r"(API_HASH\s*=\s*)['\"].*?['\"]", r"\1'YOUR_API_HASH_HERE'", content)
     content = re.sub(r"(BOT_TOKEN\s*=\s*)['\"].*?['\"]", r"\1'YOUR_BOT_TOKEN_HERE'", content)
     content = re.sub(r"(ADMIN_ID\s*=\s*)['\"].*?['\"]", r"\1'YOUR_TELEGRAM_ID_HERE'", content)
+    content = re.sub(r"(SNIFFER_LICENSE\s*=\s*)['\"].*?['\"]", r"\1'YOUR_LICENSE_KEY_HERE'", content)
     return content
 
 def create_zip(source_dir, output_zip):
