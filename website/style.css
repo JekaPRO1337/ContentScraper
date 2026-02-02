@@ -293,9 +293,11 @@ body {
 
 .features h2 {
     text-align: center;
-    font-size: 2.5rem;
+    /* Responsive font scale */
+    font-size: clamp(1.8rem, 6vw, 2.5rem);
     margin-bottom: 4rem;
     font-family: 'Unbounded', sans-serif;
+    padding: 0 5%;
 }
 
 .grid {
@@ -635,13 +637,38 @@ body {
     .hero-content {
         width: 100%;
         padding: 0 5%;
+        margin-bottom: 3rem;
+    }
+
+    .hero-visual {
+        display: flex;
+        /* Show the demon on mobile */
+        width: 100%;
+        height: auto;
+        position: relative;
+        transform: none;
+    }
+
+    .hero-main-img {
+        display: block;
+        width: 90%;
+        /* Make it large as requested */
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .hero-visual-overlay {
+        min-width: 90%;
+        width: 95%;
+        margin: 2rem auto 0;
+        padding: 1.2rem;
     }
 
     .hero-image-background {
-        width: 100%;
-        opacity: 0.1;
+        width: 150%;
+        opacity: 0.15;
         left: 50% !important;
-        top: 50% !important;
+        top: 40% !important;
         transform: translate(-50%, -50%) !important;
     }
 }
