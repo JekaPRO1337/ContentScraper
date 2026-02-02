@@ -200,14 +200,17 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    /* Shifted slightly to create the "ghost/shadow" effect behind the main image */
+    transform: translate(-45%, -55%);
     width: 140%;
     height: 140%;
     z-index: -1;
-    opacity: 0.15;
+    opacity: 0.25;
+    /* Increased slightly for visibility */
     mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
     -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
-    filter: blur(40px);
+    filter: blur(30px);
+    /* Reduced blur slightly for better definition */
 }
 
 .hero-image-background img {
