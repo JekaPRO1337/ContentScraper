@@ -101,22 +101,28 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
     if 'parse_mode' in kwargs:
         pm = kwargs['parse_mode']
         if pm is None:
-            # If we don't need markdown, HTML is usually safer or just don't pass it
             kwargs.pop('parse_mode')
         elif str(pm).lower() == "markdown":
-            # Fallback to the enum or "md" which is safer in v2.x
-            kwargs['parse_mode'] = ParseMode.MARKDOWN
+            # Fallback to "md" which is safer in v2.x
+            kwargs['parse_mode'] = "md"
 
     retries = 0
     while retries < MAX_FLOODWAIT_RETRIES:
         try:
+            # DEBUG: Log what we are sending
+            # print(f"DEBUG: sending to {chat_id} using {send_fn.__name__}, keys: {list(kwargs.keys())}")
             return await send_fn(chat_id=chat_id, **kwargs)
         except Exception as e:
             error_msg = str(e)
             
-            # Explicitly log parse mode error for debugging if it still happens
+            # Explicitly log parse mode error for debugging
             if "Invalid parse mode" in error_msg:
-                print(f"DEBUG: Parse mode error with kwargs: {list(kwargs.keys())}, pm={kwargs.get('parse_mode')}")
+                print(f"DEBUG ERROR: Invalid parse mode detected! Keys: {list(kwargs.keys())}, pm value: {kwargs.get('parse_mode')}")
+                if 'parse_mode' in kwargs:
+                    # Last resort: try without parse_mode
+                    print("DEBUG: Retrying WITHOUT parse_mode...")
+                    kwargs.pop('parse_mode')
+                    return await send_fn(chat_id=chat_id, **kwargs)
 
             if "FLOOD_WAIT" in error_msg or "flood" in error_msg.lower():
                 # Extract wait time if available
@@ -186,7 +192,7 @@ async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], 
         if "[" in replacement and "](" in replacement:
             use_markdown = True
 
-    return result, (ParseMode.MARKDOWN if use_markdown else None)
+    return result, ("md" if use_markdown else None)
 
 
 async def download_and_clone_message(
