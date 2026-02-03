@@ -1341,6 +1341,20 @@ async def handle_forwarded_message(client: Client, message: Message):
         await message.reply_text(info)
 
 
+async def reset_rules_command(client: Client, message: Message):
+    """Reset all rules IDs (button and link rules)"""
+    lang = await _get_lang_from_message(message)
+    try:
+        await db.clear_button_rules()
+        await db.clear_link_rules()
+        if lang == 'ru':
+            await message.reply_text("✅ Все правила удалены, счетчики ID сброшены!")
+        else:
+            await message.reply_text("✅ All rules deleted, ID counters reset!")
+    except Exception as e:
+        await message.reply_text(_t(lang, "generic_error").format(error=str(e)))
+
+
 # Setup callback query handler
 def setup_admin_handlers(client: Client):
     """Setup admin menu handlers"""
@@ -1366,6 +1380,7 @@ def setup_admin_handlers(client: Client):
     addbtn2_filter = filters.command("addbtn2") & filters.user(admin_id_int)
     addbtn3_filter = filters.command("addbtn3") & filters.user(admin_id_int)
     removebtn_filter = filters.command("removebtn") & filters.user(admin_id_int)
+    resetrules_filter = filters.command("resetrules") & filters.user(admin_id_int)
     
     # Setup ID resolver
     id_resolver_filter = filters.forwarded & filters.user(admin_id_int)
@@ -1383,3 +1398,4 @@ def setup_admin_handlers(client: Client):
     client.add_handler(MessageHandler(add_button_rule_two_command, addbtn2_filter))
     client.add_handler(MessageHandler(add_button_rule_three_command, addbtn3_filter))
     client.add_handler(MessageHandler(remove_button_rule_command, removebtn_filter))
+    client.add_handler(MessageHandler(reset_rules_command, resetrules_filter))

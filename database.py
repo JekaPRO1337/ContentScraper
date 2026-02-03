@@ -354,6 +354,20 @@ class Database:
     async def clear_button_rules(self):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute('DELETE FROM button_rules')
+            await self._reset_sequences(db, ["button_rules"])
+            await db.commit()
+
+    async def clear_link_rules(self):
+        """Clear all link rules and reset IDs"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('DELETE FROM link_rules')
+            await self._reset_sequences(db, ["link_rules"])
+            await db.commit()
+
+    async def reset_rules_ids(self):
+        """Reset IDs for both button_rules and link_rules"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await self._reset_sequences(db, ["button_rules", "link_rules"])
             await db.commit()
 
     async def get_all_button_rules(self):
