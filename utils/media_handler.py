@@ -1,5 +1,6 @@
 from typing import List, Optional
-from pyrogram import Client
+from pyrogram import Client, enums
+from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
 from utils.button_replacer import replace_markup
 from config import FLOODWAIT_RETRY_DELAY, MAX_FLOODWAIT_RETRIES
@@ -157,7 +158,7 @@ async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], 
         if "[" in replacement and "](" in replacement:
             use_markdown = True
 
-    return result, ("md" if use_markdown else None)
+    return result, (ParseMode.MARKDOWN if use_markdown else None)
 
 
 async def download_and_clone_message(

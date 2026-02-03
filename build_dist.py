@@ -17,6 +17,7 @@ EXCLUDE_PATTERNS = [
     r'\.agent',
     r'\.gemini',
     r'brain',
+    r'^website',
 ]
 
 def scrub_config(content):
