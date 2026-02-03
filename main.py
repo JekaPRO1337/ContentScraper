@@ -83,21 +83,14 @@ async def main():
         print("Для чтения каналов без админских прав нужна user session.")
         print("При первом запуске вам нужно будет ввести номер телефона в международном формате (например, +380... или +7...) и код подтверждения.\n")
     
-    # Custom callbacks for authorization prompts
-    async def get_phone_number():
-        return input("Enter phone number: ")
-
-    async def get_code():
-        return input("Enter code: ")
-
     # Create user client (for reading channels)
+    # Pyrogram v2.x handles phone/code input automatically in terminal
     user_client = Client(
         session_name,
         api_id=current_api_id,
-        api_hash=API_HASH,
-        phone_number_callback=get_phone_number,
-        code_callback=get_code
+        api_hash=API_HASH
     )
+
     
     # Create bot client (for admin commands, optional)
     bot_client = None
