@@ -51,31 +51,16 @@ class Database:
                 CREATE TABLE IF NOT EXISTS button_rules (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     mode TEXT NOT NULL,
+                    pattern1 TEXT NOT NULL,
                     text1 TEXT NOT NULL,
                     url1 TEXT NOT NULL,
+                    pattern2 TEXT,
                     text2 TEXT,
                     url2 TEXT,
-                    text3 TEXT,
-                    url3 TEXT,
-                    custom_buttons_mode INTEGER DEFAULT 0,
                     enabled INTEGER DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            # Add new columns if they don't exist (migration)
-            async with db.execute("PRAGMA table_info(button_rules)") as cursor:
-                columns = [row[1] for row in await cursor.fetchall()]
-            if "text3" not in columns:
-                await db.execute("ALTER TABLE button_rules ADD COLUMN text3 TEXT")
-            if "url3" not in columns:
-                await db.execute("ALTER TABLE button_rules ADD COLUMN url3 TEXT")
-            if "custom_buttons_mode" not in columns:
-                await db.execute("ALTER TABLE button_rules ADD COLUMN custom_buttons_mode INTEGER DEFAULT 0")
-            
-            # Remove legacy pattern columns if they exist (cleaning up from previous iteration if any)
-            if "pattern1" in columns:
-                # We can't easily drop columns in SQLite < 3.35.0, so we just ignore them or leave them
-                pass
             
             # Processed messages (to avoid duplicates)
             await db.execute('''
@@ -320,49 +305,31 @@ class Database:
     async def add_button_rule(
         self,
         mode: str,
+        pattern1: str,
         text1: str,
         url1: str,
+        pattern2: str | None = None,
         text2: str | None = None,
         url2: str | None = None,
-        text3: str | None = None,
-        url3: str | None = None,
     ):
         async with aiosqlite.connect(self.db_path) as db:
-            # We only ever want ONE rule (global config for buttons)
-            await db.execute('DELETE FROM button_rules')
             cursor = await db.execute(
                 '''
-                INSERT INTO button_rules (mode, text1, url1, text2, url2, text3, url3)
+                INSERT INTO button_rules (mode, pattern1, text1, url1, pattern2, text2, url2)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''',
                 (
                     mode,
+                    pattern1,
                     text1,
                     url1,
+                    pattern2,
                     text2,
                     url2,
-                    text3,
-                    url3,
                 )
             )
             await db.commit()
             return cursor.lastrowid
-
-    async def set_custom_buttons_mode(self, enabled: bool):
-        async with aiosqlite.connect(self.db_path) as db:
-            # Ensure a row exists
-            async with db.execute('SELECT COUNT(1) FROM button_rules') as cursor:
-                row = await cursor.fetchone()
-                if row[0] == 0:
-                    await db.execute(
-                        "INSERT INTO button_rules (mode, text1, url1) VALUES ('one', '', '')"
-                    )
-            
-            await db.execute(
-                'UPDATE button_rules SET custom_buttons_mode = ?',
-                (1 if enabled else 0,)
-            )
-            await db.commit()
 
     async def remove_button_rule(self, rule_id: int):
         async with aiosqlite.connect(self.db_path) as db:

@@ -66,7 +66,12 @@ def convert_video_note(input_path: str, output_path: str) -> bool:
 
 async def send_message_with_retry(client: Client, chat_id, **kwargs):
     """Send a message with FloodWait retry logic"""
+    # Defensive copy of kwargs
+    kwargs = kwargs.copy()
+    
+    # Filter unsupported arguments based on the target method
     send_fn = client.send_message
+    
     if 'photo' in kwargs:
         send_fn = client.send_photo
     elif 'video' in kwargs:
@@ -79,8 +84,28 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
         send_fn = client.send_voice
     elif 'sticker' in kwargs:
         send_fn = client.send_sticker
+        # Stickers don't support caption/parse_mode
+        kwargs.pop('caption', None)
+        kwargs.pop('caption_entities', None)
+        kwargs.pop('parse_mode', None)
     elif 'video_note' in kwargs:
         send_fn = client.send_video_note
+        # Video notes don't support caption/parse_mode
+        kwargs.pop('caption', None)
+        kwargs.pop('caption_entities', None)
+        kwargs.pop('parse_mode', None)
+
+    # Global parse_mode sanitization: 
+    # 1. Never pass parse_mode=None if it might cause Pyrogram to default to "markdown"
+    # 2. Ensure it's never the literal string "markdown"
+    if 'parse_mode' in kwargs:
+        pm = kwargs['parse_mode']
+        if pm is None:
+            # If we don't need markdown, HTML is usually safer or just don't pass it
+            kwargs.pop('parse_mode')
+        elif str(pm).lower() == "markdown":
+            # Fallback to the enum or "md" which is safer in v2.x
+            kwargs['parse_mode'] = ParseMode.MARKDOWN
 
     retries = 0
     while retries < MAX_FLOODWAIT_RETRIES:
@@ -88,15 +113,19 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
             return await send_fn(chat_id=chat_id, **kwargs)
         except Exception as e:
             error_msg = str(e)
+            
+            # Explicitly log parse mode error for debugging if it still happens
+            if "Invalid parse mode" in error_msg:
+                print(f"DEBUG: Parse mode error with kwargs: {list(kwargs.keys())}, pm={kwargs.get('parse_mode')}")
+
             if "FLOOD_WAIT" in error_msg or "flood" in error_msg.lower():
                 # Extract wait time if available
                 wait_time = FLOODWAIT_RETRY_DELAY
                 try:
-                    # Try to extract wait time from error message
                     import re
                     match = re.search(r'(\d+)', error_msg)
                     if match:
-                        wait_time = min(int(match.group(1)) + 1, 60)  # Cap at 60 seconds
+                        wait_time = min(int(match.group(1)) + 1, 60)
                 except:
                     pass
                 
@@ -106,7 +135,6 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
                     continue
             
             if "PEER_ID_INVALID" in error_msg and retries == 0:
-                # Try to resolve peer and retry
                 try:
                     await client.get_chat(chat_id)
                     retries += 1

@@ -202,7 +202,8 @@ async def monitor_channel(client: Client, donor_channel: str, target_channel: st
                         client,
                         group_messages,
                         target_channel,
-                        pair_id
+                        pair_id,
+                        sender_client=_sender_client
                     )
                     
                     # Mark all as processed
@@ -369,6 +370,7 @@ async def scrape_full_history(client: Client, pair_id: int):
                         group_messages,
                         target_channel,
                         pair_id,
+                        sender_client=_sender_client
                     )
                     for msg in group_messages:
                         await db.mark_message_processed(channel_key, msg.id)
@@ -499,14 +501,14 @@ async def download_and_clone_media_group(
             print(f"Warning: Could not download media for message {msg.id}: {str(e)}")
             # Continue with file_id if download fails
         
-        # Get caption and markup from last message
-        if i == len(messages) - 1:
+        # Get caption and markup from first message (Telegram usually puts them on the first item)
+        if i == 0:
             caption = msg.caption
             caption_entities = msg.caption_entities
             caption, caption_parse_mode = await apply_link_rules_to_text(caption)
             if caption_parse_mode:
                 caption_entities = None
-            # Always call replace_markup to support Custom Append mode
+            # Always call replace_markup to support custom buttons
             reply_markup = await replace_markup(msg.reply_markup)
         
         downloaded_media.append({
