@@ -96,15 +96,16 @@ async def send_message_with_retry(client: Client, chat_id, **kwargs):
         kwargs.pop('parse_mode', None)
 
     # Global parse_mode sanitization: 
-    # 1. Never pass parse_mode=None if it might cause Pyrogram to default to "markdown"
-    # 2. Ensure it's never the literal string "markdown"
+    # 1. We now prefer HTML as it's more robust
     if 'parse_mode' in kwargs:
         pm = kwargs['parse_mode']
         if pm is None:
             kwargs.pop('parse_mode')
-        elif str(pm).lower() == "markdown":
-            # Fallback to "md" which is safer in v2.x
-            kwargs['parse_mode'] = "md"
+        elif str(pm).lower() in ["markdown", "md"]:
+            # Convert any requested markdown to HTML (already handled in apply_link_rules_to_text mostly)
+            kwargs['parse_mode'] = enums.ParseMode.HTML
+        elif str(pm).lower() == "html":
+             kwargs['parse_mode'] = enums.ParseMode.HTML
 
     retries = 0
     while retries < MAX_FLOODWAIT_RETRIES:
@@ -159,9 +160,12 @@ async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], 
     if not rules:
         return text, None
 
+    import html
+    
     result = text
-    use_markdown = False
+    use_html = False
 
+    # Apply link rules
     for rule in rules:
         pattern = (rule.get("pattern") or "").strip()
         replacement = rule.get("replacement") or ""
@@ -175,10 +179,24 @@ async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], 
                 continue
             if not regex.search(result):
                 continue
-            result = regex.sub(replacement, result)
+            
+            # If replacement has a markdown link, we will need HTML
+            if "[" in replacement and "](http" in replacement:
+                use_html = True
+                # Convert markdown link in replacement to HTML tag safely
+                replacement = re.sub(r'\[(.*?)\]\((http.*?)\)', r'PLACEHOLDER_OPEN\2PLACEHOLDER_MID\1PLACEHOLDER_CLOSE', replacement)
+                result = regex.sub(replacement, result)
+            else:
+                result = regex.sub(replacement, result)
         else:
             if pattern.lower() not in result.lower():
                 continue
+            
+            # If replacement has a markdown link, we will need HTML
+            if "[" in replacement and "](http" in replacement:
+                use_html = True
+                replacement = re.sub(r'\[(.*?)\]\((http.*?)\)', r'PLACEHOLDER_OPEN\2PLACEHOLDER_MID\1PLACEHOLDER_CLOSE', replacement)
+
             try:
                 result = re.sub(
                     re.escape(pattern),
@@ -189,10 +207,13 @@ async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], 
             except Exception:
                 continue
 
-        if "[" in replacement and "](" in replacement:
-            use_markdown = True
+    if use_html:
+        # Escape the entire result first to be safe
+        result = html.escape(result)
+        # Restore the HTML tags from placeholders
+        result = result.replace('PLACEHOLDER_OPEN', '<a href="').replace('PLACEHOLDER_MID', '">').replace('PLACEHOLDER_CLOSE', '</a>')
 
-    return result, ("md" if use_markdown else None)
+    return result, ("html" if use_html else None)
 
 
 async def download_and_clone_message(

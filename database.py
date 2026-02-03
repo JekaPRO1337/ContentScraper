@@ -51,16 +51,28 @@ class Database:
                 CREATE TABLE IF NOT EXISTS button_rules (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     mode TEXT NOT NULL,
-                    pattern1 TEXT NOT NULL,
                     text1 TEXT NOT NULL,
                     url1 TEXT NOT NULL,
-                    pattern2 TEXT,
                     text2 TEXT,
                     url2 TEXT,
+                    text3 TEXT,
+                    url3 TEXT,
+                    custom_buttons_mode INTEGER DEFAULT 0,
                     enabled INTEGER DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # Check and add columns if missing for button_rules
+            async with db.execute("PRAGMA table_info(button_rules)") as cursor:
+                btn_columns = [row[1] for row in await cursor.fetchall()]
+            
+            if "text3" not in btn_columns:
+                await db.execute("ALTER TABLE button_rules ADD COLUMN text3 TEXT")
+            if "url3" not in btn_columns:
+                await db.execute("ALTER TABLE button_rules ADD COLUMN url3 TEXT")
+            if "custom_buttons_mode" not in btn_columns:
+                await db.execute("ALTER TABLE button_rules ADD COLUMN custom_buttons_mode INTEGER DEFAULT 0")
             
             # Processed messages (to avoid duplicates)
             await db.execute('''
@@ -305,27 +317,30 @@ class Database:
     async def add_button_rule(
         self,
         mode: str,
-        pattern1: str,
         text1: str,
         url1: str,
-        pattern2: str | None = None,
         text2: str | None = None,
         url2: str | None = None,
+        text3: str | None = None,
+        url3: str | None = None,
     ):
         async with aiosqlite.connect(self.db_path) as db:
+            # Clear existing rules first (system supports one global set for now)
+            await db.execute('DELETE FROM button_rules')
+            
             cursor = await db.execute(
                 '''
-                INSERT INTO button_rules (mode, pattern1, text1, url1, pattern2, text2, url2)
+                INSERT INTO button_rules (mode, text1, url1, text2, url2, text3, url3)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''',
                 (
                     mode,
-                    pattern1,
                     text1,
                     url1,
-                    pattern2,
                     text2,
                     url2,
+                    text3,
+                    url3,
                 )
             )
             await db.commit()
