@@ -157,7 +157,7 @@ async def apply_link_rules_to_text(text: Optional[str]) -> tuple[Optional[str], 
         if "[" in replacement and "](" in replacement:
             use_markdown = True
 
-    return result, ("markdown" if use_markdown else None)
+    return result, ("md" if use_markdown else None)
 
 
 async def download_and_clone_message(

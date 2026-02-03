@@ -16,13 +16,10 @@ async def replace_markup(markup: InlineKeyboardMarkup | None) -> InlineKeyboardM
         return markup
 
     rule = rules[0]
-    custom_mode = bool(rule.get("custom_buttons_mode", 0))
+    # custom_mode = bool(rule.get("custom_buttons_mode", 0)) # We ignore this toggle now as per user request
     mode = (rule.get("mode") or "one").lower()
 
-    # If NOT in custom_mode and donor has NO buttons, we return None (don't inject)
-    # UNLESS it's custom_mode, then we ALWAYS inject our buttons.
-    if not custom_mode and (not markup or not markup.inline_keyboard):
-        return None
+    # If rules exist, we proceed. We no longer check if donor had buttons.
 
     buttons = []
     
@@ -47,8 +44,8 @@ async def replace_markup(markup: InlineKeyboardMarkup | None) -> InlineKeyboardM
             buttons.append(InlineKeyboardButton(text3, url=url3))
 
     if not buttons:
-        # If in custom_mode but no buttons configured, return original markup (or None)
-        return markup if not custom_mode else None
+        # If no buttons configured, return original markup
+        return markup
 
     # Return as a single row of buttons
     return InlineKeyboardMarkup([buttons])
