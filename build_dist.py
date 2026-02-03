@@ -17,7 +17,8 @@ EXCLUDE_PATTERNS = [
     r'\.agent',
     r'\.gemini',
     r'brain',
-    r'^website',
+    r'^website$',  # Exact match for website folder
+    r'^website\\', # Match anything inside website folder just in case
 ]
 
 def scrub_config(content):
@@ -31,13 +32,29 @@ def scrub_config(content):
     return content
 
 def create_zip(source_dir, output_zip):
+    # Delete existing zip if it exists
+    if os.path.exists(output_zip):
+        print(f"Deleting old archive: {output_zip}")
+        os.remove(output_zip)
+        
     print(f"Creating archive: {output_zip}")
     
+    added_files = 0
     with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(source_dir):
-            # Exclude directories
-            dirs[:] = [d for d in dirs if not any(re.search(p, d) for p in EXCLUDE_PATTERNS)]
+            relative_root = os.path.relpath(root, source_dir)
             
+            # Exclude directories
+            if relative_root == ".":
+                # We are at project root, filter immediate children
+                dirs[:] = [d for d in dirs if not any(re.search(p, d) for p in EXCLUDE_PATTERNS)]
+            else:
+                # We are in a subdirectory, check if THIS root itself should be excluded 
+                # (Standard dirs[:] modification should handle this, but being extra safe)
+                if any(re.search(p, relative_root) for p in EXCLUDE_PATTERNS):
+                    dirs[:] = []
+                    continue
+
             for file in files:
                 # Exclude files
                 if any(re.search(p, file) for p in EXCLUDE_PATTERNS):
@@ -46,6 +63,10 @@ def create_zip(source_dir, output_zip):
                 file_path = os.path.join(root, file)
                 archive_path = os.path.relpath(file_path, source_dir)
                 
+                # Double check archive_path against website
+                if archive_path.startswith("website") or "\\website" in archive_path:
+                    continue
+
                 # Special handling for config.py
                 if file == 'config.py' and root == source_dir:
                     print(f"  Scrubbing {file_path}")
@@ -54,13 +75,23 @@ def create_zip(source_dir, output_zip):
                     scrubbed_content = scrub_config(content)
                     zipf.writestr(archive_path, scrubbed_content.encode('utf-8'))
                 else:
-                    # zipf.write(file_path, archive_path)
                     try:
                         zipf.write(file_path, archive_path)
                     except Exception as e:
                         print(f"  Error adding {archive_path}: {e}")
+                added_files += 1
 
-    print(f"Successfully created {output_zip}")
+    print(f"Successfully created {output_zip} with {added_files} files.")
+    
+    # Verification
+    print("Verifying archive content...")
+    with zipfile.ZipFile(output_zip, 'r') as verify_zip:
+        names = verify_zip.namelist()
+        website_files = [n for n in names if 'website' in n]
+        if website_files:
+            print(f"WARNING: Archive contains website files: {website_files[:5]}...")
+        else:
+            print("Archive verified: No website files found.")
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
